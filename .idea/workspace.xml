@@ -4,67 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3f0e6989-2a64-442b-8d88-977ae57db4e5" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/Sockets.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/FactoryHandler.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/client/AbstractAsyncClient.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/client/AbstractAsyncClientFactory.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/client/AbstractAsyncClientWrapper.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/client/AbstractAsyncConnectHandler.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/client/AbstractAsyncConnectHandlerFactory.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/client/AbstractAsyncReadHandler.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/client/AbstractAsyncReadHandlerFactory.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/client/AbstractAsyncWriteHandler.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/client/AbstractAsyncWriteHandlerFactory.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/client/AsyncClientPool.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/forward/AsyncForwardConnection.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/forward/AsyncForwardConnectionFactory.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/forward/AsyncForwardServer.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/forward/ForwardCheckAliveThread.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/forward/ServerDescription.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/impl/packet/client/AbstractAsyncPacketClientWrapper.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/impl/packet/client/AsyncPacketClient.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/impl/packet/client/AsyncPacketClientConnectHandler.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/impl/packet/client/AsyncPacketClientConnectHandlerFactory.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/impl/packet/client/AsyncPacketClientFactory.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/impl/packet/client/AsyncPacketClientPacketWorker.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/impl/packet/client/AsyncPacketClientReadHandler.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/impl/packet/client/AsyncPacketClientReadHandlerFactory.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/impl/packet/client/AsyncPacketClientWriteHandler.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/impl/packet/client/AsyncPacketClientWriteHandlerFactory.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/impl/packet/server/AsyncPacketServer.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/impl/packet/server/AsyncPacketServerAcceptHandler.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/impl/packet/server/AsyncPacketServerAcceptHandlerFactory.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/impl/packet/server/AsyncPacketServerClient.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/impl/packet/server/AsyncPacketServerClientFactory.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/impl/packet/server/AsyncPacketServerPacketWorker.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/impl/packet/server/AsyncPacketServerReadHandler.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/impl/packet/server/AsyncPacketServerReadHandlerFactory.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/server/AbstractAsyncAcceptHandler.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/server/AbstractAsyncAcceptHandlerFactory.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/async/server/AbstractAsyncServer.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/events/ClientConnectEvent.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/events/ClientDisconnectEvent.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/events/ClientPacketReceiveEvent.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/events/ServerPacketReceiveEvent.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/io/IByteBuffer.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/packet/FilePacket.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/packet/Packet.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/packet/PacketCallback.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/packet/PacketCombiner.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/packet/PacketFuture.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/packet/PacketInterface.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/packet/PacketProtocol.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/packet/UnfinishedPacket.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/utils/BitUtils.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/utils/Compressor.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/utils/Decompressor.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/de/ancash/sockets/utils/VarUtils.java" afterDir="false" />
+    <list default="true" id="3f0e6989-2a64-442b-8d88-977ae57db4e5" name="Changes" comment="asd">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -72,7 +13,10 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="Git.Settings">
+    <option name="ADD_SUFFIX_TO_CHERRY_PICKS_OF_PUBLISHED_COMMITS" value="false" />
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="WARN_ABOUT_CRLF" value="false" />
+    <option name="WARN_ABOUT_DETACHED_HEAD" value="false" />
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
@@ -83,13 +27,14 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/home/denzo/IdeaProjects/Sockets/src/main/java&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "last_opened_file_path": "/home/denzo/IdeaProjects/Sockets/src/main/java",
+    "settings.editor.selected.configurable": "vcs.Git"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/src/main/java" />
@@ -158,6 +103,14 @@
       <option name="presentableId" value="Default" />
       <updated>1658678015211</updated>
     </task>
+    <task id="LOCAL-00001" summary="asd">
+      <created>1658679016055</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1658679016055</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -170,5 +123,9 @@
         </entry>
       </map>
     </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="asd" />
+    <option name="LAST_COMMIT_MESSAGE" value="asd" />
   </component>
 </project>
