@@ -11,6 +11,7 @@ import java.util.concurrent.Executors;
 
 import de.ancash.datastructures.tuples.Duplet;
 import de.ancash.datastructures.tuples.Tuple;
+import de.ancash.ithread.IThreadFactory;
 import de.ancash.libs.org.bukkit.event.EventManager;
 import de.ancash.sockets.async.impl.packet.client.AsyncPacketClientWriteHandlerFactory;
 import de.ancash.sockets.async.server.AbstractAsyncServer;
@@ -22,7 +23,7 @@ import de.ancash.sockets.packet.UnfinishedPacket;
 public class AsyncPacketServer extends AbstractAsyncServer{
 
 	private final ArrayBlockingQueue<Duplet<UnfinishedPacket, AsyncPacketServerClient>> unfishedPackets = new ArrayBlockingQueue<>(10000); 
-	private final ExecutorService workerPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+	private final ExecutorService workerPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(), new IThreadFactory());
 	private final Set<AsyncPacketServerClient> clients = new HashSet<>();
 	
 	public AsyncPacketServer(String address, int port, int packetWorker) {
