@@ -4,9 +4,8 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.AsynchronousSocketChannel;
-import java.util.concurrent.Executors;
 
-import de.ancash.ithread.IThreadFactory;
+import de.ancash.ithread.IThreadPoolExecutor;
 import de.ancash.sockets.async.client.AbstractAsyncClientFactory;
 import de.ancash.sockets.async.server.AbstractAsyncServer;
 
@@ -19,7 +18,7 @@ public class AsyncPacketClientFactory extends AbstractAsyncClientFactory<AsyncPa
 
 	@Override
 	public AsyncPacketClient newInstance(String address, int port, int queueSize, int readBufSize, int writeBufSize, int threads) throws IOException {
-		AsynchronousChannelGroup asyncChannelGroup = AsynchronousChannelGroup.withThreadPool(Executors.newFixedThreadPool(threads, new IThreadFactory()));
+		AsynchronousChannelGroup asyncChannelGroup = AsynchronousChannelGroup.withThreadPool(IThreadPoolExecutor.newFixedThreadPool(threads));
 		AsynchronousSocketChannel asyncSocket = AsynchronousSocketChannel.open(asyncChannelGroup);
 		AsyncPacketClient client = new AsyncPacketClient(asyncSocket, asyncChannelGroup, queueSize, readBufSize, writeBufSize, threads);
 		asyncSocket.connect(new InetSocketAddress(address, port), client, client.getAsyncConnectHandlerFactory().newInstance(client));

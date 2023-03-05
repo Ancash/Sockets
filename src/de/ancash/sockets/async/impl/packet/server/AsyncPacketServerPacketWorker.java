@@ -54,7 +54,7 @@ public class AsyncPacketServerPacketWorker implements Runnable{
 						EventManager.callEvent(new ServerPacketReceiveEvent(reconstructed, sender));
 					break;
 				}
-			} catch(Exception ex) {
+			} catch(Throwable ex) {
 				System.err.println("Could not process packet!:");
 				ex.printStackTrace();
 			}

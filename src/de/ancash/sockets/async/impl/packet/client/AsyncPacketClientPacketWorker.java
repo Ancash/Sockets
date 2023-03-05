@@ -29,10 +29,11 @@ public class AsyncPacketClientPacketWorker implements Runnable{
 				Packet p = new Packet(unfinishedPacket.getSecond().getHeader());
 				try {
 					p.reconstruct(bytes);
-					EventManager.callEvent(new ClientPacketReceiveEvent(unfinishedPacket.getFirst(), p));
 				} catch (IOException e) {
 					e.printStackTrace();
+					continue;
 				}
+				EventManager.callEvent(new ClientPacketReceiveEvent(unfinishedPacket.getFirst(), p));
 			} catch (InterruptedException e) {
 				return;
 			}

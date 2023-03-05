@@ -8,13 +8,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import de.ancash.datastructures.tuples.Duplet;
 import de.ancash.datastructures.tuples.Tuple;
-import de.ancash.ithread.IThreadFactory;
+import de.ancash.ithread.IThreadPoolExecutor;
 import de.ancash.libs.org.bukkit.event.EventHandler;
 import de.ancash.libs.org.bukkit.event.EventManager;
 import de.ancash.libs.org.bukkit.event.Listener;
@@ -33,7 +32,7 @@ public class AsyncPacketClient extends AbstractAsyncClient implements Listener {
 	private final Map<Long, Packet> awaitResponses = new HashMap<>();
 	private final Lock lock = new ReentrantLock();
 	private final PacketCombiner packetCombiner = new PacketCombiner();
-	private ExecutorService clientThreadPool = Executors.newCachedThreadPool(new IThreadFactory());
+	private ExecutorService clientThreadPool = IThreadPoolExecutor.newCachedThreadPool();
 	private ArrayBlockingQueue<Duplet<AsyncPacketClient, UnfinishedPacket>> unfinishedPacketsQueue = new ArrayBlockingQueue<>(
 			1000);
 	private final int worker;

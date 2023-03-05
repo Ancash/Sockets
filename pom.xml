@@ -61,12 +61,12 @@
 		<dependency>
 			<groupId>de.ancash</groupId>
 			<artifactId>ithread</artifactId>
-			<version>0.0.1</version>
+			<version>0.0.3</version>
 		</dependency>
 		<dependency>
 			<groupId>de.ancash</groupId>
 			<artifactId>events</artifactId>
-			<version>0.0.1</version>
+			<version>0.0.2</version>
 		</dependency>
 		<dependency>
 			<groupId>de.ancash</groupId>
@@ -81,6 +81,11 @@
 		<dependency>
 			<groupId>de.ancash</groupId>
 			<artifactId>loki</artifactId>
+			<version>0.0.1</version>
+		</dependency>
+		<dependency>
+			<groupId>de.ancash</groupId>
+			<artifactId>lambda</artifactId>
 			<version>0.0.1</version>
 		</dependency>
 	</dependencies>
