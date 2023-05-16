@@ -10,7 +10,7 @@ import java.util.concurrent.Executors;
 
 import de.ancash.sockets.async.FactoryHandler;
 
-public abstract class AbstractAsyncServer extends FactoryHandler{
+public abstract class AbstractAsyncServer extends FactoryHandler {
 
 	private final String address;
 	private final int port;
@@ -18,9 +18,9 @@ public abstract class AbstractAsyncServer extends FactoryHandler{
 	private int readBufSize = 8 * 1024;
 	private int writeBufSize = 8 * 1024;
 	private int writeQueueSize = 1000;
-	private AsynchronousChannelGroup asyncChannelGroup;  
-    private AsynchronousServerSocketChannel listener; 
-    
+	private AsynchronousChannelGroup asyncChannelGroup;
+	private AsynchronousServerSocketChannel listener;
+
 	public AbstractAsyncServer(String address, int port) {
 		this.address = address;
 		this.port = port;
@@ -32,9 +32,10 @@ public abstract class AbstractAsyncServer extends FactoryHandler{
 		listener = AsynchronousServerSocketChannel.open(asyncChannelGroup).bind(new InetSocketAddress(address, port));
 		listener.accept(listener, getAsyncAcceptHandlerFactory().newInstance(this));
 	}
-	
+
 	public synchronized void stop() throws IOException {
-		if(asyncChannelGroup == null) return;
+		if (asyncChannelGroup == null)
+			return;
 		asyncChannelGroup.shutdownNow();
 		listener.close();
 		asyncChannelGroup = null;
@@ -44,15 +45,15 @@ public abstract class AbstractAsyncServer extends FactoryHandler{
 	public SocketAddress getLocalAddress() throws IOException {
 		return listener.getLocalAddress();
 	}
-	
+
 	public int getThreads() {
 		return threads;
 	}
-	
+
 	public void setThreads(int i) {
 		this.threads = i;
 	}
-	
+
 	public int getWriteBufSize() {
 		return writeBufSize;
 	}
@@ -80,6 +81,6 @@ public abstract class AbstractAsyncServer extends FactoryHandler{
 	public boolean isOpen() {
 		return listener != null && listener.isOpen();
 	}
-	
+
 	public abstract void onAccept(AsynchronousSocketChannel socket) throws IOException;
 }

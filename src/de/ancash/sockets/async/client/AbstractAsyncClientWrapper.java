@@ -9,7 +9,8 @@ import de.ancash.libs.org.bukkit.event.Listener;
 import de.ancash.sockets.events.ClientConnectEvent;
 import de.ancash.sockets.events.ClientDisconnectEvent;
 
-public abstract class AbstractAsyncClientWrapper<S extends AbstractAsyncClient, T extends AbstractAsyncClientFactory<S>> implements Listener{
+public abstract class AbstractAsyncClientWrapper<S extends AbstractAsyncClient, T extends AbstractAsyncClientFactory<S>>
+		implements Listener {
 
 	protected S chatClient;
 	protected final T factory;
@@ -17,7 +18,7 @@ public abstract class AbstractAsyncClientWrapper<S extends AbstractAsyncClient, 
 	protected int readBuf = 256 * 1024;
 	protected int writeBuf = 256 * 1024;
 	protected int threads = 3;
-	
+
 	public AbstractAsyncClientWrapper(Class<T> clazz) {
 		EventManager.registerEvents(this, this);
 		try {
@@ -26,12 +27,13 @@ public abstract class AbstractAsyncClientWrapper<S extends AbstractAsyncClient, 
 			throw new IllegalStateException(e);
 		}
 	}
-	
+
 	public synchronized boolean connect(String address, int port) {
-		if(chatClient != null) {
+		if (chatClient != null) {
 			try {
 				chatClient.onDisconnect(new IllegalStateException("Only one client"));
-			} catch(Exception ex) {}
+			} catch (Exception ex) {
+			}
 			chatClient = null;
 		}
 		try {
@@ -41,40 +43,40 @@ public abstract class AbstractAsyncClientWrapper<S extends AbstractAsyncClient, 
 			return false;
 		}
 	}
-	
+
 	public boolean putWrite(byte[] b) {
 		return chatClient.putWrite(b);
 	}
-	
+
 	public boolean putWrite(ByteBuffer b) {
 		return chatClient.putWrite(b);
 	}
-	
+
 	public boolean offerWrite(byte[] b) {
 		return chatClient.offerWrite(b);
 	}
-	
+
 	public boolean offerWrite(ByteBuffer b) {
 		return chatClient.offerWrite(b);
 	}
-	
+
 	public S getClient() {
 		return chatClient;
 	}
-	
+
 	@EventHandler
 	public void onClientDisconnect(ClientDisconnectEvent event) {
-		if(event.getClient().equals(chatClient))
+		if (event.getClient().equals(chatClient))
 			this.onClientDisconnect(event.getClient());
 	}
-	
+
 	@EventHandler
 	public void onClientConnect(ClientConnectEvent event) {
-		if(event.getClient().equals(chatClient))
+		if (event.getClient().equals(chatClient))
 			this.onClientConnect(event.getClient());
 	}
-	
+
 	public abstract void onClientDisconnect(AbstractAsyncClient client);
-	
+
 	public abstract void onClientConnect(AbstractAsyncClient client);
 }

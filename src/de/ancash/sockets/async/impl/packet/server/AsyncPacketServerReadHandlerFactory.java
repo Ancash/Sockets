@@ -4,10 +4,10 @@ import de.ancash.sockets.async.client.AbstractAsyncClient;
 import de.ancash.sockets.async.client.AbstractAsyncReadHandler;
 import de.ancash.sockets.async.client.AbstractAsyncReadHandlerFactory;
 
-public class AsyncPacketServerReadHandlerFactory extends AbstractAsyncReadHandlerFactory{
+public class AsyncPacketServerReadHandlerFactory extends AbstractAsyncReadHandlerFactory {
 
 	private final AsyncPacketServer server;
-	
+
 	public AsyncPacketServerReadHandlerFactory(AsyncPacketServer server) {
 		this.server = server;
 	}

@@ -9,8 +9,9 @@ import java.util.stream.Collectors;
 
 import de.ancash.sockets.packet.Packet;
 
-public class AsyncClientPool<S extends AbstractAsyncClient, T extends AbstractAsyncClientFactory<S>> implements Runnable{
-	
+public class AsyncClientPool<S extends AbstractAsyncClient, T extends AbstractAsyncClientFactory<S>>
+		implements Runnable {
+
 	private final AsyncClientPoolWatcher watcher = new AsyncClientPoolWatcher();
 	private final String address;
 	private final int port;
@@ -22,8 +23,9 @@ public class AsyncClientPool<S extends AbstractAsyncClient, T extends AbstractAs
 	private final int threadsPerCon;
 	private boolean enabled = false;
 	private final Set<S> clients = new HashSet<>();
-	
-	public AsyncClientPool(Class<T> tClazz, String address, int port, int connections, int queueSize, int readBufSize, int writeBufSize, int threadsPerCon) {
+
+	public AsyncClientPool(Class<T> tClazz, String address, int port, int connections, int queueSize, int readBufSize,
+			int writeBufSize, int threadsPerCon) {
 		try {
 			this.factory = tClazz.getConstructor().newInstance();
 			this.port = port;
@@ -38,27 +40,29 @@ public class AsyncClientPool<S extends AbstractAsyncClient, T extends AbstractAs
 			throw new IllegalStateException(e);
 		}
 	}
-	
+
 	public void start() {
 		stop();
 		enabled = true;
-		for(int i = 0; i<connections; i++) 
+		for (int i = 0; i < connections; i++)
 			newConnection();
 	}
-	
+
 	public boolean newConnection() {
 		try {
 			S newCon = factory.newInstance(address, port, queueSize, readBufSize, writeBufSize, threadsPerCon);
 			int i = 0;
-			while(!newCon.isConnected()) {
+			while (!newCon.isConnected()) {
 				Thread.sleep(1);
 				i++;
-				if(i >= 1000) throw new IOException("Connection refused");
+				if (i >= 1000)
+					throw new IOException("Connection refused");
 			}
-			
+
 			synchronized (clients) {
 				clients.add(newCon);
-				System.out.println("Established new connection to " + address + ":" + port + " (" + clients.size() + "/" + connections + ")");
+				System.out.println("Established new connection to " + address + ":" + port + " (" + clients.size() + "/"
+						+ connections + ")");
 			}
 			return true;
 		} catch (IOException | InterruptedException e) {
@@ -66,31 +70,37 @@ public class AsyncClientPool<S extends AbstractAsyncClient, T extends AbstractAs
 			return false;
 		}
 	}
-	
+
 	public boolean write(byte[] b) {
 		return this.write(ByteBuffer.wrap(b));
 	}
-	
+
 	public boolean write(ByteBuffer bb) {
-		if(!enabled) return false;
+		if (!enabled)
+			return false;
 		synchronized (clients) {
-			clients.stream().sorted((a, b) -> Integer.compare(a.getWritingQueueSize(), b.getWritingQueueSize())).findFirst().get().putWrite(bb);
+			clients.stream().sorted((a, b) -> Integer.compare(a.getWritingQueueSize(), b.getWritingQueueSize()))
+					.findFirst().get().putWrite(bb);
 		}
 		return true;
 	}
-	
+
 	public boolean write(Packet packet) {
-		if(!enabled) return false;
+		if (!enabled)
+			return false;
 		synchronized (clients) {
-			AbstractAsyncClient client = clients.stream().sorted((a, b) -> Integer.compare(a.getWritingQueueSize(), b.getWritingQueueSize())).findFirst().get();
+			AbstractAsyncClient client = clients.stream()
+					.sorted((a, b) -> Integer.compare(a.getWritingQueueSize(), b.getWritingQueueSize())).findFirst()
+					.get();
 			client.putWrite(packet.toBytes());
 			return true;
 		}
 	}
-	
+
 	public void stop() {
 		synchronized (clients) {
-			if(!enabled) return;
+			if (!enabled)
+				return;
 			enabled = false;
 			clients.forEach(client -> {
 				client.setConnected(false);
@@ -99,33 +109,36 @@ public class AsyncClientPool<S extends AbstractAsyncClient, T extends AbstractAs
 			clients.clear();
 		}
 	}
-	
+
 	@Override
 	public void run() {
 		watcher.run();
 	}
-	
-	class AsyncClientPoolWatcher implements Runnable{
+
+	class AsyncClientPoolWatcher implements Runnable {
 
 		@Override
 		public void run() {
-			while(enabled) {
+			while (enabled) {
 				try {
 					Thread.sleep(1000);
 				} catch (InterruptedException e) {
 					break;
 				}
-				
+
 				synchronized (clients) {
-					for(AbstractAsyncClient client : clients.stream().collect(Collectors.toSet())) {
-						if(client.isConnected()) continue;
+					for (AbstractAsyncClient client : clients.stream().collect(Collectors.toSet())) {
+						if (client.isConnected())
+							continue;
 						clients.remove(client);
 					}
 				}
 				int fails = 0;
-				while(clients.size() < connections) {
-					if(!newConnection()) fails++;
-					if(fails >= 3) break;
+				while (clients.size() < connections) {
+					if (!newConnection())
+						fails++;
+					if (fails >= 3)
+						break;
 				}
 			}
 			stop();

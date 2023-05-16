@@ -9,20 +9,21 @@ import de.ancash.sockets.events.ClientPacketReceiveEvent;
 import de.ancash.sockets.packet.Packet;
 import de.ancash.sockets.packet.UnfinishedPacket;
 
-public class AsyncPacketClientPacketWorker implements Runnable{
+public class AsyncPacketClientPacketWorker implements Runnable {
 
 	private final ArrayBlockingQueue<Duplet<AsyncPacketClient, UnfinishedPacket>> queue;
 	private int id;
-	
-	public AsyncPacketClientPacketWorker(ArrayBlockingQueue<Duplet<AsyncPacketClient, UnfinishedPacket>> unfinishedPacketsQueue, int id) {
+
+	public AsyncPacketClientPacketWorker(
+			ArrayBlockingQueue<Duplet<AsyncPacketClient, UnfinishedPacket>> unfinishedPacketsQueue, int id) {
 		this.queue = unfinishedPacketsQueue;
 		this.id = id;
 	}
-	
+
 	@Override
 	public void run() {
 		Thread.currentThread().setName("ClientPacketWorker - " + id);
-		while(true) {
+		while (true) {
 			try {
 				Duplet<AsyncPacketClient, UnfinishedPacket> unfinishedPacket = queue.take();
 				byte[] bytes = unfinishedPacket.getSecond().getBytes();

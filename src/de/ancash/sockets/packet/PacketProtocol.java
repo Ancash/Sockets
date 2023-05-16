@@ -12,14 +12,14 @@ class PacketProtocol {
 	private final Compressor compressor = new Compressor();
 	private boolean useCompression = false;
 	private byte info = 0;
-	
+
 	public boolean useCompression() {
 		return useCompression;
 	}
 
 	public void useCompression(boolean useCompression) {
 		this.useCompression = useCompression;
-		if(useCompression)
+		if (useCompression)
 			info = BitUtils.setBit(info, 0);
 		else
 			info = BitUtils.unsetBit(info, 0);
@@ -31,11 +31,11 @@ class PacketProtocol {
 
 	public void setCompressionStrategy(int compressionStrategy) {
 		compressor.setStrategy(compressionStrategy);
-	}	
-	
+	}
+
 	public byte[] apply(byte[] in) throws IOException {
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		if(useCompression)
+		if (useCompression)
 			in = compressor.compress(in);
 		byte[] time = VarUtils.writeVarLong(System.nanoTime());
 		out.write(VarUtils.writeVarInt(in.length + 1 + time.length));

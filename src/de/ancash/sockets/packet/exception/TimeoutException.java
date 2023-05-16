@@ -7,11 +7,11 @@ public class TimeoutException extends RuntimeException {
 	public TimeoutException(String str, Exception ex) {
 		super(str, ex);
 	}
-	
+
 	public TimeoutException(String str) {
 		super(str);
 	}
-	
+
 	public TimeoutException() {
 		super();
 	}

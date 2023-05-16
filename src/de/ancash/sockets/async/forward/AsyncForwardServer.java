@@ -10,12 +10,12 @@ import de.ancash.sockets.async.impl.packet.client.AsyncPacketClientWriteHandlerF
 import de.ancash.sockets.async.impl.packet.server.AsyncPacketServerAcceptHandlerFactory;
 import de.ancash.sockets.async.server.AbstractAsyncServer;
 
-public class AsyncForwardServer extends AbstractAsyncServer{
-	
+public class AsyncForwardServer extends AbstractAsyncServer {
+
 	private long checkAliveIntervalMs = 5000;
 	private final ServerDescription[] serverList;
 	private ExecutorService executor;
-	
+
 	public AsyncForwardServer(String address, int port, String[] targets) {
 		super(address, port);
 		setAsyncAcceptHandlerFactory(new AsyncPacketServerAcceptHandlerFactory());
@@ -23,7 +23,7 @@ public class AsyncForwardServer extends AbstractAsyncServer{
 		setAsyncWriteHandlerFactory(new AsyncPacketClientWriteHandlerFactory());
 		setAsyncClientFactory(new AsyncForwardConnectionFactory());
 		serverList = new ServerDescription[targets.length];
-		for(int i = 0; i<targets.length; i++)
+		for (int i = 0; i < targets.length; i++)
 			serverList[i] = new ServerDescription(targets[i].split(":")[0], Integer.valueOf(targets[i].split(":")[1]));
 	}
 
@@ -34,15 +34,16 @@ public class AsyncForwardServer extends AbstractAsyncServer{
 		executor.submit(new ForwardCheckAliveThread(serverList, getCheckAliveIntervalMs()));
 		System.out.println("Bound to " + getLocalAddress());
 	}
-	
+
 	@Override
 	public synchronized void stop() throws IOException {
-		super.stop();	
-		if(executor == null) return;
+		super.stop();
+		if (executor == null)
+			return;
 		executor.shutdownNow();
 		executor = null;
 	}
-	
+
 	public long getCheckAliveIntervalMs() {
 		return checkAliveIntervalMs;
 	}
@@ -59,8 +60,8 @@ public class AsyncForwardServer extends AbstractAsyncServer{
 	public void onAccept(AsynchronousSocketChannel socket) {
 		try {
 			getAsyncClientFactory().newInstance(this, socket, getWriteQueueSize(), getReadBufSize(), getWriteBufSize());
-		} catch(Exception ex) {
-			
+		} catch (Exception ex) {
+
 		}
 	}
 }

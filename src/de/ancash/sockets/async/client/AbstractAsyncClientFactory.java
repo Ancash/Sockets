@@ -7,7 +7,9 @@ import de.ancash.sockets.async.server.AbstractAsyncServer;
 
 public abstract class AbstractAsyncClientFactory<T extends AbstractAsyncClient> {
 
-	public abstract T newInstance(AbstractAsyncServer asyncServer, AsynchronousSocketChannel socket, int queueSize, int readBufSize, int writeBufSize) throws IOException;
-	
-	public abstract T newInstance(String address, int port, int queueSize, int readBufSize, int writeBufSize, int threads) throws IOException;
+	public abstract T newInstance(AbstractAsyncServer asyncServer, AsynchronousSocketChannel socket, int queueSize,
+			int readBufSize, int writeBufSize) throws IOException;
+
+	public abstract T newInstance(String address, int port, int queueSize, int readBufSize, int writeBufSize,
+			int threads) throws IOException;
 }

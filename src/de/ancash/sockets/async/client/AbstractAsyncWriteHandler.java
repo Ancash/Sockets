@@ -4,24 +4,28 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.CompletionHandler;
 
-public abstract class AbstractAsyncWriteHandler implements CompletionHandler<Integer, ByteBuffer>{
+import de.ancash.ithread.IThreadPoolExecutor;
+
+public abstract class AbstractAsyncWriteHandler implements CompletionHandler<Integer, ByteBuffer> {
+
+	protected static final IThreadPoolExecutor writer = IThreadPoolExecutor.newCachedThreadPool();
 
 	protected final AbstractAsyncClient client;
 	private boolean canWrite = true;
 	private Object writeLock = new Object();
-	
+
 	public AbstractAsyncWriteHandler(AbstractAsyncClient asyncSocket) {
 		this.client = asyncSocket;
 	}
-	
+
 	@Override
 	public void completed(Integer written, ByteBuffer bb) {
-		if(written == -1 || !client.isConnectionValid()) {
+		if (written == -1 || !client.isConnectionValid()) {
 			failed(new ClosedChannelException(), bb);
-			return;	
+			return;
 		}
-				
-		if(bb.hasRemaining()) {
+
+		if (bb.hasRemaining()) {
 			client.getAsyncSocketChannel().write(bb, bb, this);
 			return;
 		} else {
@@ -31,13 +35,13 @@ public abstract class AbstractAsyncWriteHandler implements CompletionHandler<Int
 			client.checkWrite();
 		}
 	}
-	
+
 	@Override
 	public void failed(Throwable arg0, ByteBuffer arg1) {
 		client.setConnected(false);
 		client.onDisconnect(arg0);
 	}
-	
+
 	public boolean canWrite() {
 		synchronized (writeLock) {
 			return canWrite;
@@ -46,11 +50,11 @@ public abstract class AbstractAsyncWriteHandler implements CompletionHandler<Int
 
 	public boolean write(ByteBuffer bb) {
 		synchronized (writeLock) {
-			if(!canWrite)
+			if (!canWrite)
 				return false;
 			canWrite = false;
 		}
-		client.getAsyncSocketChannel().write(bb, bb, this);
+		writer.submit(() -> client.getAsyncSocketChannel().write(bb, bb, this));
 		return true;
 	}
 }

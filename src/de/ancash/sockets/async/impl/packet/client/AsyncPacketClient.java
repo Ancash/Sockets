@@ -110,7 +110,7 @@ public class AsyncPacketClient extends AbstractAsyncClient implements Listener {
 		}
 		clientThreadPool.shutdownNow();
 		clientThreadPool = null;
-		EventManager.callEvent(new ClientDisconnectEvent(this));
+		EventManager.callEvent(new ClientDisconnectEvent(this, th));
 		asyncChannelGroup = null;
 		lock.lock();
 		try {

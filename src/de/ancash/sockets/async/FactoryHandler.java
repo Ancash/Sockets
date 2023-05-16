@@ -9,24 +9,24 @@ import de.ancash.sockets.async.server.AbstractAsyncAcceptHandlerFactory;
 public class FactoryHandler {
 
 	private AbstractAsyncAcceptHandlerFactory acceptHandlerFactory;
-    private AbstractAsyncReadHandlerFactory readHandlerFactory;
-    private AbstractAsyncWriteHandlerFactory writeHandlerFactory;
-    private AbstractAsyncConnectHandlerFactory connectHandlerFactory;
-    @SuppressWarnings("rawtypes")
+	private AbstractAsyncReadHandlerFactory readHandlerFactory;
+	private AbstractAsyncWriteHandlerFactory writeHandlerFactory;
+	private AbstractAsyncConnectHandlerFactory connectHandlerFactory;
+	@SuppressWarnings("rawtypes")
 	private AbstractAsyncClientFactory asyncSocketFactory;
-    
+
 	public AbstractAsyncAcceptHandlerFactory getAsyncAcceptHandlerFactory() {
 		return acceptHandlerFactory;
 	}
-    
+
 	public void setAsyncAcceptHandlerFactory(AbstractAsyncAcceptHandlerFactory acceptHandlerFactory) {
 		this.acceptHandlerFactory = acceptHandlerFactory;
 	}
-	
+
 	public AbstractAsyncReadHandlerFactory getAsyncReadHandlerFactory() {
 		return readHandlerFactory;
 	}
-	
+
 	public void setAsyncReadHandlerFactory(AbstractAsyncReadHandlerFactory readHandlerFactory) {
 		this.readHandlerFactory = readHandlerFactory;
 	}

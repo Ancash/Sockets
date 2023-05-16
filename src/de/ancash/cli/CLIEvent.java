@@ -17,7 +17,7 @@ public class CLIEvent extends Event {
 	}
 
 	private final String s;
-	
+
 	public CLIEvent(String s) {
 		this.s = s;
 	}

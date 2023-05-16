@@ -53,7 +53,7 @@ public class Sockets {
 				+ IFormatter.THREAD_NAME + "/" + IFormatter.COLOR + IFormatter.LEVEL + IFormatter.RESET + "] ["
 				+ PluginOutputFormatter.PLUGIN_NAME + "] " + IFormatter.COLOR + IFormatter.MESSAGE + IFormatter.RESET,
 				pluginManager, "\b\b\b");
-		
+
 		LoggerUtils.setOut(Level.INFO, pof);
 		LoggerUtils.setErr(Level.SEVERE, pof);
 		LoggerUtils.setGlobalLogger(pof);
@@ -89,11 +89,11 @@ public class Sockets {
 		System.out.println("Enabling plugins...");
 		pluginManager.loadPlugins();
 		System.out.println("Enabled plugins!");
-		
+
 		CLI cli = new CLI();
 		cli.onInput(Sockets::onInput);
 		cli.run();
-		
+
 //		while (true) {
 //			String input = in.nextLine().toLowerCase();
 //
@@ -123,16 +123,15 @@ public class Sockets {
 			return;
 		case "plugins":
 			StringBuilder builder = new StringBuilder();
-			pluginManager.getPlugins().stream().map(SimpleLokiPluginImpl::getClass).map(Class::getClassLoader)
-					.forEach(s -> builder
-							.append(", " + ((LokiPluginClassLoader<?>) s).getLoader().getDescription().getName()));
+			pluginManager.getPlugins().stream().map(SimpleLokiPluginImpl::getClass).map(Class::getClassLoader).forEach(
+					s -> builder.append(", " + ((LokiPluginClassLoader<?>) s).getLoader().getDescription().getName()));
 			System.out.println("Plugins: " + builder.toString().replaceFirst(", ", ""));
 			break;
 		default:
 			break;
 		}
 	}
-	
+
 	public static boolean isOpen() {
 		return serverSocket.isOpen();
 	}

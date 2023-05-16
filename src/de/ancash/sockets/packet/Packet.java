@@ -1,5 +1,8 @@
 package de.ancash.sockets.packet;
 
+import static de.ancash.misc.ConversionUtil.bytesToInt;
+import static de.ancash.misc.ConversionUtil.bytesToShort;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
@@ -9,8 +12,6 @@ import java.util.Optional;
 import de.ancash.misc.ConversionUtil;
 import de.ancash.misc.ReflectionUtils;
 import de.ancash.misc.io.SerializationUtils;
-
-import static de.ancash.misc.ConversionUtil.*;
 
 public class Packet implements PacketInterface, Serializable, Cloneable {
 
@@ -37,7 +38,8 @@ public class Packet implements PacketInterface, Serializable, Cloneable {
 
 	@Override
 	public String toString() {
-		return "header=" + header + ", long=" + longValue + ", serializable=" + (obj != null ? ReflectionUtils.toString(obj, false) : "null");
+		return "header=" + header + ", long=" + longValue + ", serializable="
+				+ (obj != null ? ReflectionUtils.toString(obj, false) : "null");
 	}
 
 	@Override
