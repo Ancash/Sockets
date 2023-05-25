@@ -29,8 +29,8 @@ public class AsyncPacketServer extends AbstractAsyncServer {
 
 	public AsyncPacketServer(String address, int port, int packetWorker) {
 		super(address, port);
-		setReadBufSize(1024 * 256);
-		setWriteBufSize(1024 * 256);
+		setReadBufSize(1024 * 1);
+		setWriteBufSize(1024 * 1);
 		setAsyncAcceptHandlerFactory(new AsyncPacketServerAcceptHandlerFactory());
 		setAsyncReadHandlerFactory(new AsyncPacketServerReadHandlerFactory(this));
 		setAsyncWriteHandlerFactory(new AsyncPacketClientWriteHandlerFactory());

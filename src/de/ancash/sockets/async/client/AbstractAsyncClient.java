@@ -56,6 +56,8 @@ public abstract class AbstractAsyncClient extends FactoryHandler {
 
 	@Override
 	public int hashCode() {
+		if(remoteAddress == null)
+			return 0;
 		return getRemoteAddress().hashCode();
 	}
 

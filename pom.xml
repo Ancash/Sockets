@@ -55,11 +55,6 @@
 	</repositories>
 	<dependencies>
 		<dependency>
-			<groupId>me.carleslc.Simple-YAML</groupId>
-			<artifactId>Simple-Yaml</artifactId>
-			<version>1.8.4</version>
-		</dependency>
-		<dependency>
 			<groupId>javax.json</groupId>
 			<artifactId>javax.json-api</artifactId>
 			<version>1.1</version>
@@ -71,27 +66,7 @@
 		</dependency>
 		<dependency>
 			<groupId>de.ancash</groupId>
-			<artifactId>apache-commons</artifactId>
-			<version>0.0.1</version>
-		</dependency>
-		<dependency>
-			<groupId>de.ancash</groupId>
-			<artifactId>datastructures</artifactId>
-			<version>0.0.1</version>
-		</dependency>
-		<dependency>
-			<groupId>de.ancash</groupId>
-			<artifactId>ithread</artifactId>
-			<version>0.0.3</version>
-		</dependency>
-		<dependency>
-			<groupId>de.ancash</groupId>
 			<artifactId>events</artifactId>
-			<version>0.0.2</version>
-		</dependency>
-		<dependency>
-			<groupId>de.ancash</groupId>
-			<artifactId>misc</artifactId>
 			<version>0.0.2</version>
 		</dependency>
 		<dependency>

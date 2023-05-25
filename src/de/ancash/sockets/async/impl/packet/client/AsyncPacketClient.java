@@ -66,9 +66,11 @@ public class AsyncPacketClient extends AbstractAsyncClient implements Listener {
 
 	public final void write(Packet packet) {
 
-		packet.addTimeStamp();
 		lock.lock();
 		try {
+			packet.addTimeStamp();
+			while(packetCallbacks.containsKey(packet.getTimeStamp()) || awaitResponses.containsKey(packet.getTimeStamp()))
+				packet.addTimeStamp();
 			if (packet.hasPacketCallback())
 				packetCallbacks.put(packet.getTimeStamp(), packet.getPacketCallback());
 			if (packet.isAwaitingRespose())
