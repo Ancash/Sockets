@@ -4,13 +4,17 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.CompletionHandler;
 
+import de.ancash.sockets.async.ByteEventHandler;
+
 public abstract class AbstractAsyncReadHandler implements CompletionHandler<Integer, ByteBuffer> {
 
 	protected final AbstractAsyncClient client;
 	protected final ByteBuffer readBuffer;
+	protected ByteEventHandler byteHandler;
 
-	public AbstractAsyncReadHandler(AbstractAsyncClient asyncClient, int readBufSize) {
+	public AbstractAsyncReadHandler(AbstractAsyncClient asyncClient, int readBufSize, ByteEventHandler byteHandler) {
 		this.client = asyncClient;
+		this.byteHandler = byteHandler;
 		this.readBuffer = ByteBuffer.allocate(readBufSize);
 	}
 
@@ -24,7 +28,10 @@ public abstract class AbstractAsyncReadHandler implements CompletionHandler<Inte
 		byte[] bytes = new byte[buf.remaining()];
 		buf.get(bytes);
 		buf.clear();
-		client.onBytesReceive(bytes);
+		if (byteHandler != null)
+			byteHandler.onBytes(bytes);
+		else
+			client.onBytesReceive(bytes);
 		client.getAsyncSocketChannel().read(buf, client.timeout, client.timeoutunit, buf, this);
 	}
 

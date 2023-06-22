@@ -3,16 +3,70 @@ package de.ancash.sockets.async.client;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.CompletionHandler;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.LockSupport;
+import java.util.stream.IntStream;
 
-import de.ancash.ithread.IThreadPoolExecutor;
+import com.lmax.disruptor.EventHandler;
+import com.lmax.disruptor.SleepingWaitStrategy;
+import com.lmax.disruptor.dsl.ProducerType;
+
+import de.ancash.disruptor.MultiConsumerDisruptor;
 
 public abstract class AbstractAsyncWriteHandler implements CompletionHandler<Integer, ByteBuffer> {
 
-	protected static final IThreadPoolExecutor writer = IThreadPoolExecutor.newCachedThreadPool();
+	private static long maxRateLimitNs = 250_000;
+	private static long minRateLimitNs = 10_000;
+	private static double growthConstant = -0.00000005;
+
+	public static long getMaxRateLimit() {
+		return maxRateLimitNs;
+	}
+
+	public static void setGrowthConstants(double d) {
+		growthConstant = d;
+	}
+
+	public static double getGrowthConstant() {
+		return growthConstant;
+	}
+
+	public static long getMinRateLimit() {
+		return minRateLimitNs;
+	}
+
+	public static void setMaxRateLimit(long ns) {
+		maxRateLimitNs = ns;
+	}
+
+	public static void setMinRateLimit(long ns) {
+		minRateLimitNs = ns;
+	}
+
+	public static int calcRateLimit(int bps) {
+		return (int) (maxRateLimitNs - (maxRateLimitNs - minRateLimitNs) * Math.pow(Math.E, growthConstant * bps));
+	}
+
+	private static MultiConsumerDisruptor<CheckWriteEvent> mc = new MultiConsumerDisruptor<>(CheckWriteEvent::new, 1024,
+			ProducerType.MULTI, new SleepingWaitStrategy(0, 1), IntStream.range(0, 3).boxed()
+					.map(i -> new CheckWriteEventHandler()).toArray(CheckWriteEventHandler[]::new));
+
+	private static class CheckWriteEventHandler implements EventHandler<CheckWriteEvent> {
+
+		@Override
+		public void onEvent(CheckWriteEvent event, long sequence, boolean endOfBatch) throws Exception {
+			while (System.nanoTime() - event.client.writeHandler.lastWrite < event.client.rateLimit) {
+				LockSupport.parkNanos(100);
+			}
+			event.client.writeHandler.canWrite.set(true);
+			event.client.checkWrite();
+		}
+
+	}
 
 	protected final AbstractAsyncClient client;
-	private boolean canWrite = true;
-	private Object writeLock = new Object();
+	private AtomicBoolean canWrite = new AtomicBoolean(true);
+	protected long lastWrite;
 
 	public AbstractAsyncWriteHandler(AbstractAsyncClient asyncSocket) {
 		this.client = asyncSocket;
@@ -24,15 +78,14 @@ public abstract class AbstractAsyncWriteHandler implements CompletionHandler<Int
 			failed(new ClosedChannelException(), bb);
 			return;
 		}
-
 		if (bb.hasRemaining()) {
 			client.getAsyncSocketChannel().write(bb, bb, this);
 			return;
 		} else {
-			synchronized (writeLock) {
-				canWrite = true;
-			}
-			client.checkWrite();
+			lastWrite = System.nanoTime();
+			mc.publishEvent((e, seq) -> {
+				e.client = client;
+			});
 		}
 	}
 
@@ -43,18 +96,17 @@ public abstract class AbstractAsyncWriteHandler implements CompletionHandler<Int
 	}
 
 	public boolean canWrite() {
-		synchronized (writeLock) {
-			return canWrite;
-		}
+		return canWrite.get();
 	}
 
 	public boolean write(ByteBuffer bb) {
-		synchronized (writeLock) {
-			if (!canWrite)
-				return false;
-			canWrite = false;
-		}
-		writer.submit(() -> client.getAsyncSocketChannel().write(bb, bb, this));
+		if (!canWrite.compareAndSet(true, false))
+			return false;
+		client.getAsyncSocketChannel().write(bb, bb, this);
 		return true;
 	}
+}
+
+class CheckWriteEvent {
+	AbstractAsyncClient client;
 }

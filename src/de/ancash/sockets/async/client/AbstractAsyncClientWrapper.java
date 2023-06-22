@@ -14,11 +14,11 @@ public abstract class AbstractAsyncClientWrapper<S extends AbstractAsyncClient, 
 
 	protected S chatClient;
 	protected final T factory;
-	protected int queueSize = 10_000;
 	protected int readBuf = 256 * 1024;
 	protected int writeBuf = 256 * 1024;
 	protected int threads = 3;
 
+	@SuppressWarnings("deprecation")
 	public AbstractAsyncClientWrapper(Class<T> clazz) {
 		EventManager.registerEvents(this, this);
 		try {
@@ -28,6 +28,7 @@ public abstract class AbstractAsyncClientWrapper<S extends AbstractAsyncClient, 
 		}
 	}
 
+	@SuppressWarnings("nls")
 	public synchronized boolean connect(String address, int port) {
 		if (chatClient != null) {
 			try {
@@ -37,7 +38,7 @@ public abstract class AbstractAsyncClientWrapper<S extends AbstractAsyncClient, 
 			chatClient = null;
 		}
 		try {
-			chatClient = factory.newInstance(address, port, queueSize, readBuf, writeBuf, threads);
+			chatClient = factory.newInstance(address, port, readBuf, writeBuf, threads);
 			return true;
 		} catch (IOException e) {
 			return false;

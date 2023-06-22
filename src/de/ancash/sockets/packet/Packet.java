@@ -1,7 +1,6 @@
 package de.ancash.sockets.packet;
 
-import static de.ancash.misc.ConversionUtil.bytesToInt;
-import static de.ancash.misc.ConversionUtil.bytesToShort;
+import static de.ancash.misc.ConversionUtil.*;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -18,6 +17,7 @@ public class Packet implements PacketInterface, Serializable, Cloneable {
 	private static final long serialVersionUID = 962998206232520827L;
 
 	public static final short PING_PONG = 32723;
+	public static final short FILL = 1;
 
 	private byte[] HEADER_BYTES;
 
@@ -185,7 +185,10 @@ public class Packet implements PacketInterface, Serializable, Cloneable {
 		bytes[13] = (byte) (longValue);
 		bytes[14] = (byte) (isClientTarget ? 0 : 1);
 		System.arraycopy(serializedBytes, 0, bytes, 15, serializedBytes.length);
-		return ByteBuffer.wrap(bytes);
+		ByteBuffer bb = ByteBuffer.allocateDirect(bytes.length);
+		bb.put(bytes);
+		bb.position(0);
+		return bb;
 	}
 
 	public void resetResponse() {

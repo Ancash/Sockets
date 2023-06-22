@@ -17,21 +17,19 @@ public class AsyncClientPool<S extends AbstractAsyncClient, T extends AbstractAs
 	private final int port;
 	private final T factory;
 	private final int connections;
-	private final int queueSize;
 	private final int readBufSize;
 	private final int writeBufSize;
 	private final int threadsPerCon;
 	private boolean enabled = false;
 	private final Set<S> clients = new HashSet<>();
 
-	public AsyncClientPool(Class<T> tClazz, String address, int port, int connections, int queueSize, int readBufSize,
+	public AsyncClientPool(Class<T> tClazz, String address, int port, int connections, int readBufSize,
 			int writeBufSize, int threadsPerCon) {
 		try {
 			this.factory = tClazz.getConstructor().newInstance();
 			this.port = port;
 			this.address = address;
 			this.connections = connections;
-			this.queueSize = queueSize;
 			this.readBufSize = readBufSize;
 			this.writeBufSize = writeBufSize;
 			this.threadsPerCon = threadsPerCon;
@@ -50,7 +48,7 @@ public class AsyncClientPool<S extends AbstractAsyncClient, T extends AbstractAs
 
 	public boolean newConnection() {
 		try {
-			S newCon = factory.newInstance(address, port, queueSize, readBufSize, writeBufSize, threadsPerCon);
+			S newCon = factory.newInstance(address, port, readBufSize, writeBufSize, threadsPerCon);
 			int i = 0;
 			while (!newCon.isConnected()) {
 				Thread.sleep(1);

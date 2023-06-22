@@ -39,8 +39,8 @@ public class AsyncPacketClient extends AbstractAsyncClient implements Listener {
 	private AsynchronousChannelGroup asyncChannelGroup;
 
 	public AsyncPacketClient(AsynchronousSocketChannel asyncSocket, AsynchronousChannelGroup asyncChannelGroup,
-			int queueSize, int readBufSize, int writeBufSize, int worker) throws IOException {
-		super(asyncSocket, queueSize, readBufSize, writeBufSize);
+			int readBufSize, int writeBufSize, int worker) throws IOException {
+		super(asyncSocket, readBufSize, writeBufSize);
 		this.asyncChannelGroup = asyncChannelGroup;
 		setAsyncClientFactory(new AsyncPacketClientFactory());
 		setAsyncReadHandlerFactory(new AsyncPacketClientReadHandlerFactory());
@@ -65,11 +65,11 @@ public class AsyncPacketClient extends AbstractAsyncClient implements Listener {
 	}
 
 	public final void write(Packet packet) {
-
 		lock.lock();
 		try {
 			packet.addTimeStamp();
-			while(packetCallbacks.containsKey(packet.getTimeStamp()) || awaitResponses.containsKey(packet.getTimeStamp()))
+			while (packetCallbacks.containsKey(packet.getTimeStamp())
+					|| awaitResponses.containsKey(packet.getTimeStamp()))
 				packet.addTimeStamp();
 			if (packet.hasPacketCallback())
 				packetCallbacks.put(packet.getTimeStamp(), packet.getPacketCallback());

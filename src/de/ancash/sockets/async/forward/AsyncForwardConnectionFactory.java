@@ -10,14 +10,13 @@ public class AsyncForwardConnectionFactory extends AbstractAsyncClientFactory<As
 
 	@Override
 	public AsyncForwardConnection newInstance(AbstractAsyncServer asyncServer, AsynchronousSocketChannel socket,
-			int queueSize, int readBufSize, int writeBufSize) throws IOException {
-		return new AsyncForwardConnection((AsyncForwardServer) asyncServer, socket, queueSize, readBufSize,
-				writeBufSize);
+			int readBufSize, int writeBufSize) throws IOException {
+		return new AsyncForwardConnection((AsyncForwardServer) asyncServer, socket, readBufSize, writeBufSize);
 	}
 
 	@Override
-	public AsyncForwardConnection newInstance(String address, int port, int queueSize, int readBufSize,
-			int writeBufSize, int threads) throws IOException {
+	public AsyncForwardConnection newInstance(String address, int port, int readBufSize, int writeBufSize, int threads)
+			throws IOException {
 		throw new UnsupportedOperationException();
 	}
 }

@@ -15,8 +15,8 @@ public class AsyncPacketServerClient extends AbstractAsyncClient {
 	protected final PacketCombiner packetCombiner = new PacketCombiner();
 
 	public AsyncPacketServerClient(AbstractAsyncServer asyncIOServer, AsynchronousSocketChannel asyncSocket,
-			int queueSize, int readBufSize, int writeBufSize) throws IOException {
-		super(asyncSocket, queueSize, readBufSize, writeBufSize);
+			int readBufSize, int writeBufSize) throws IOException {
+		super(asyncSocket, readBufSize, writeBufSize);
 		this.server = (AsyncPacketServer) asyncIOServer;
 		setAsyncWriteHandlerFactory(asyncIOServer.getAsyncWriteHandlerFactory());
 		setAsyncReadHandlerFactory(asyncIOServer.getAsyncReadHandlerFactory());
@@ -43,6 +43,7 @@ public class AsyncPacketServerClient extends AbstractAsyncClient {
 			l = packetCombiner.put(bytes);
 		} catch (Exception ex) {
 			System.err.println(getRemoteAddress() + " threw an exception during read: " + ex);
+			ex.printStackTrace();
 			System.err.println("Disconnecting " + getRemoteAddress());
 			try {
 				getAsyncSocketChannel().close();

@@ -14,10 +14,9 @@ public abstract class AbstractAsyncServer extends FactoryHandler {
 
 	private final String address;
 	private final int port;
-	private int threads = Runtime.getRuntime().availableProcessors() * 2;
+	private int threads = Runtime.getRuntime().availableProcessors();
 	private int readBufSize = 8 * 1024;
 	private int writeBufSize = 8 * 1024;
-	private int writeQueueSize = 1000;
 	private AsynchronousChannelGroup asyncChannelGroup;
 	private AsynchronousServerSocketChannel listener;
 
@@ -27,7 +26,6 @@ public abstract class AbstractAsyncServer extends FactoryHandler {
 	}
 
 	public void start() throws IOException {
-		stop();
 		asyncChannelGroup = AsynchronousChannelGroup.withThreadPool(Executors.newFixedThreadPool(threads));
 		listener = AsynchronousServerSocketChannel.open(asyncChannelGroup).bind(new InetSocketAddress(address, port));
 		listener.accept(listener, getAsyncAcceptHandlerFactory().newInstance(this));
@@ -68,14 +66,6 @@ public abstract class AbstractAsyncServer extends FactoryHandler {
 
 	public void setReadBufSize(int readBufSize) {
 		this.readBufSize = readBufSize;
-	}
-
-	public int getWriteQueueSize() {
-		return writeQueueSize;
-	}
-
-	public void setWriteQueueSize(int writeQueueSize) {
-		this.writeQueueSize = writeQueueSize;
 	}
 
 	public boolean isOpen() {

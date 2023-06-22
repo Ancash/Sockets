@@ -30,6 +30,7 @@ public abstract class AbstractAsyncAcceptHandler
 		try {
 			socket.setOption(StandardSocketOptions.SO_SNDBUF, asyncIOServer.getWriteBufSize());
 			socket.setOption(StandardSocketOptions.SO_RCVBUF, asyncIOServer.getReadBufSize());
+			socket.setOption(StandardSocketOptions.TCP_NODELAY, true);
 			asyncIOServer.onAccept(socket);
 		} catch (IOException ex) {
 			failed(ex, server);

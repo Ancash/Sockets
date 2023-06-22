@@ -19,12 +19,12 @@ public class AsyncForwardConnection extends AbstractAsyncClient {
 	private final ServerDescription server;
 	private boolean connected = true;
 
-	public AsyncForwardConnection(AsyncForwardServer server, AsynchronousSocketChannel asyncSocket, int queueSize,
-			int readBufSize, int writeBufSize) throws IOException {
-		super(asyncSocket, queueSize, readBufSize, writeBufSize);
+	public AsyncForwardConnection(AsyncForwardServer server, AsynchronousSocketChannel asyncSocket, int readBufSize,
+			int writeBufSize) throws IOException {
+		super(asyncSocket, readBufSize, writeBufSize);
 		this.forwardServer = server;
 		this.server = getServerWithMinimalLoad(forwardServer);
-		this.partner = new AsyncForwardConnection(this.server, server, createAsyncSocket(this), queueSize, readBufSize,
+		this.partner = new AsyncForwardConnection(this.server, server, createAsyncSocket(this), readBufSize,
 				writeBufSize, this);
 		setConnected(true);
 		System.out.println(
@@ -36,8 +36,8 @@ public class AsyncForwardConnection extends AbstractAsyncClient {
 	}
 
 	AsyncForwardConnection(ServerDescription desc, AsyncForwardServer server, AsynchronousSocketChannel asyncSocket,
-			int queueSize, int readBufSize, int writeBufSize, AsyncForwardConnection partner) throws IOException {
-		super(asyncSocket, queueSize, readBufSize, writeBufSize);
+			int readBufSize, int writeBufSize, AsyncForwardConnection partner) throws IOException {
+		super(asyncSocket, readBufSize, writeBufSize);
 		setConnected(true);
 		this.forwardServer = server;
 		this.partner = partner;

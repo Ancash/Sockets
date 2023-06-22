@@ -1,10 +1,10 @@
 package de.ancash.sockets.packet;
 
-import static de.ancash.misc.ConversionUtil.bytesToInt;
-import static de.ancash.misc.ConversionUtil.bytesToShort;
+import static de.ancash.misc.ConversionUtil.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class PacketCombiner {
 
@@ -15,13 +15,14 @@ public class PacketCombiner {
 	private int size;
 
 	private boolean hasSize = false;
-	private int maxSize = 1024 * 1024 * 256;
+	private int maxSize = 1024 * 1024 * 1024;
 	private int added = 0;
+	AtomicLong cnt = new AtomicLong();
 
+	@SuppressWarnings("nls")
 	public synchronized List<UnfinishedPacket> put(byte... bytes) {
 		List<UnfinishedPacket> restored = new ArrayList<>();
 		for (int pos = 0; pos < bytes.length;) {
-
 			if (!hasSize) {
 				sizeBytes[added] = bytes[pos];
 				added++;
@@ -33,7 +34,8 @@ public class PacketCombiner {
 					hasSize = true;
 					allBytes = new byte[size];
 					added = 0;
-					System.arraycopy(sizeBytes, 0, allBytes, 0, 4);
+					for (int i = 0; i < 4; i++)
+						allBytes[i] = sizeBytes[i];
 				}
 				pos++;
 				continue;

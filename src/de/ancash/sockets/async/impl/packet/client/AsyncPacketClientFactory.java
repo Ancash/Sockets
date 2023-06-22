@@ -13,18 +13,18 @@ public class AsyncPacketClientFactory extends AbstractAsyncClientFactory<AsyncPa
 
 	@Override
 	public AsyncPacketClient newInstance(AbstractAsyncServer asyncServer, AsynchronousSocketChannel socket,
-			int queueSize, int readBufSize, int writeBufSize) {
+			int readBufSize, int writeBufSize) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public AsyncPacketClient newInstance(String address, int port, int queueSize, int readBufSize, int writeBufSize,
-			int threads) throws IOException {
+	public AsyncPacketClient newInstance(String address, int port, int readBufSize, int writeBufSize, int threads)
+			throws IOException {
 		AsynchronousChannelGroup asyncChannelGroup = AsynchronousChannelGroup
 				.withThreadPool(IThreadPoolExecutor.newFixedThreadPool(threads));
 		AsynchronousSocketChannel asyncSocket = AsynchronousSocketChannel.open(asyncChannelGroup);
-		AsyncPacketClient client = new AsyncPacketClient(asyncSocket, asyncChannelGroup, queueSize, readBufSize,
-				writeBufSize, threads);
+		AsyncPacketClient client = new AsyncPacketClient(asyncSocket, asyncChannelGroup, readBufSize, writeBufSize,
+				threads);
 		asyncSocket.connect(new InetSocketAddress(address, port), client,
 				client.getAsyncConnectHandlerFactory().newInstance(client));
 		return client;

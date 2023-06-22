@@ -59,7 +59,7 @@ public class AsyncForwardServer extends AbstractAsyncServer {
 	@Override
 	public void onAccept(AsynchronousSocketChannel socket) {
 		try {
-			getAsyncClientFactory().newInstance(this, socket, getWriteQueueSize(), getReadBufSize(), getWriteBufSize());
+			getAsyncClientFactory().newInstance(this, socket, getReadBufSize(), getWriteBufSize());
 		} catch (Exception ex) {
 
 		}

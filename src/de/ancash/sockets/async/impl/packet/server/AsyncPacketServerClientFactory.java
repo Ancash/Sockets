@@ -10,13 +10,13 @@ public class AsyncPacketServerClientFactory extends AbstractAsyncClientFactory<A
 
 	@Override
 	public AsyncPacketServerClient newInstance(AbstractAsyncServer asyncServer, AsynchronousSocketChannel socket,
-			int queueSize, int readBufSize, int writeBufSize) throws IOException {
-		return new AsyncPacketServerClient(asyncServer, socket, queueSize, readBufSize, writeBufSize);
+			int readBufSize, int writeBufSize) throws IOException {
+		return new AsyncPacketServerClient(asyncServer, socket, readBufSize, writeBufSize);
 	}
 
 	@Override
-	public AsyncPacketServerClient newInstance(String address, int port, int queueSize, int readBufSize,
-			int writeBufSize, int threads) throws IOException {
+	public AsyncPacketServerClient newInstance(String address, int port, int readBufSize, int writeBufSize, int threads)
+			throws IOException {
 		throw new UnsupportedOperationException();
 	}
 }
