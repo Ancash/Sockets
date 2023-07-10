@@ -1,7 +1,7 @@
 package de.ancash.sockets.async.impl.packet.client;
 
+import com.lmax.disruptor.BlockingWaitStrategy;
 import com.lmax.disruptor.EventHandler;
-import com.lmax.disruptor.SleepingWaitStrategy;
 import com.lmax.disruptor.dsl.ProducerType;
 
 import de.ancash.disruptor.SingleConsumerDisruptor;
@@ -14,7 +14,7 @@ public class AsyncPacketClientReadHandler extends AbstractAsyncReadHandler
 		implements ByteEventHandler, EventHandler<ByteEvent> {
 
 	protected final SingleConsumerDisruptor<ByteEvent> scd = new SingleConsumerDisruptor<ByteEvent>(ByteEvent::new,
-			1024, ProducerType.SINGLE, new SleepingWaitStrategy(0, 1), this);
+			1024, ProducerType.SINGLE, new BlockingWaitStrategy(), this);
 
 	public AsyncPacketClientReadHandler(AbstractAsyncClient asyncClient, int readBufSize) {
 		super(asyncClient, readBufSize, null);
@@ -29,5 +29,10 @@ public class AsyncPacketClientReadHandler extends AbstractAsyncReadHandler
 	@Override
 	public void onEvent(ByteEvent event, long sequence, boolean endOfBatch) throws Exception {
 		client.onBytesReceive(event.bytes);
+	}
+
+	@Override
+	public void onDisconnect() {
+		scd.stop();
 	}
 }

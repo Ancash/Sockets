@@ -40,4 +40,6 @@ public abstract class AbstractAsyncReadHandler implements CompletionHandler<Inte
 		client.setConnected(false);
 		client.onDisconnect(arg0);
 	}
+
+	public abstract void onDisconnect();
 }

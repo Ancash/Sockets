@@ -34,7 +34,7 @@ public abstract class AbstractAsyncClient extends FactoryHandler {
 	protected AtomicLong pos = new AtomicLong();
 	protected final long[] sent = new long[] { 1, 1 };
 	protected long stamp = System.currentTimeMillis();
-	protected long rateLimit = 10_000;
+	protected long rateLimit = AbstractAsyncWriteHandler.getMinRateLimit();
 
 	@SuppressWarnings("nls")
 	public AbstractAsyncClient(AsynchronousSocketChannel asyncSocket, int readBufSize, int writeBufSize)
@@ -153,10 +153,8 @@ public abstract class AbstractAsyncClient extends FactoryHandler {
 			sent[(int) (pos.incrementAndGet() % sent.length)] = size;
 			rateLimit = AbstractAsyncWriteHandler
 					.calcRateLimit((int) (sent[(int) ((pos.get() + 1) % sent.length)] / 10));
-//			System.out.println("calc rate limit: " + rateLimit + " ns, bytesps: " + sent[(int) ((pos.get() + 1) % sent.length)] / 10);
 		} else {
 			sent[(int) (pos.get() % sent.length)] += size;
-			;
 		}
 
 	}
@@ -206,6 +204,8 @@ public abstract class AbstractAsyncClient extends FactoryHandler {
 
 	public void setConnected(boolean b) {
 		this.isConnected.set(b);
+		if (!b)
+			readHandler.onDisconnect();
 	}
 
 	public void setTimeout(long l, TimeUnit u) {

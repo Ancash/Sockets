@@ -7,8 +7,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.IntStream;
 
+import com.lmax.disruptor.BlockingWaitStrategy;
 import com.lmax.disruptor.EventHandler;
-import com.lmax.disruptor.SleepingWaitStrategy;
 import com.lmax.disruptor.dsl.ProducerType;
 
 import de.ancash.disruptor.MultiConsumerDisruptor;
@@ -48,7 +48,7 @@ public abstract class AbstractAsyncWriteHandler implements CompletionHandler<Int
 	}
 
 	private static MultiConsumerDisruptor<CheckWriteEvent> mc = new MultiConsumerDisruptor<>(CheckWriteEvent::new, 1024,
-			ProducerType.MULTI, new SleepingWaitStrategy(0, 1), IntStream.range(0, 3).boxed()
+			ProducerType.MULTI, new BlockingWaitStrategy(), IntStream.range(0, 3).boxed()
 					.map(i -> new CheckWriteEventHandler()).toArray(CheckWriteEventHandler[]::new));
 
 	private static class CheckWriteEventHandler implements EventHandler<CheckWriteEvent> {
