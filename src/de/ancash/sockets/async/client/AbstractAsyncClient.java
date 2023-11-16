@@ -4,37 +4,60 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.AsynchronousSocketChannel;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
 import de.ancash.sockets.async.FactoryHandler;
+import de.ancash.sockets.io.FixedByteBuffer;
+import de.ancash.sockets.io.PositionedByteBuf;
 
 public abstract class AbstractAsyncClient extends FactoryHandler {
 
-	private static final AtomicLong clid = new AtomicLong();
+	public static AsynchronousChannelGroup asyncChannelGroup;
 
-	protected final long instance = clid.incrementAndGet();
+	static {
+		try {
+			asyncChannelGroup = AsynchronousChannelGroup.withFixedThreadPool(
+					Math.max(Runtime.getRuntime().availableProcessors() / 2, 1), new ThreadFactory() {
+						int i = 0;
+
+						@Override
+						public synchronized Thread newThread(Runnable arg0) {
+							Thread t = new Thread(arg0);
+							t.setName("AsyncChannelGroup-" + i++);
+							return t;
+						}
+					});
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private static final AtomicInteger clid = new AtomicInteger();
+
+	protected final int instance = clid.getAndIncrement();
 	protected final int readBufSize;
 	protected final int writeBufSize;
 	protected final AsynchronousSocketChannel asyncSocket;
 	protected AbstractAsyncReadHandler readHandler;
 	protected AbstractAsyncWriteHandler writeHandler;
 	protected final LinkedBlockingQueue<ByteBuffer> toWrite;
-	protected final SocketAddress remoteAddress;
+	protected SocketAddress remoteAddress;
+	protected SocketAddress localAddress;
 	protected final AtomicBoolean isConnected = new AtomicBoolean(false);
 	protected TimeUnit timeoutunit = TimeUnit.SECONDS;
 	protected long timeout = Long.MAX_VALUE;
 	protected final ReentrantLock lock = new ReentrantLock(true);
 	protected AtomicLong pos = new AtomicLong();
-	protected final long[] sent = new long[] { 1, 1 };
 	protected long stamp = System.currentTimeMillis();
-	protected long rateLimit = AbstractAsyncWriteHandler.getMinRateLimit();
+	protected final FixedByteBuffer fbb;
 
 	@SuppressWarnings("nls")
 	public AbstractAsyncClient(AsynchronousSocketChannel asyncSocket, int readBufSize, int writeBufSize)
@@ -45,10 +68,10 @@ public abstract class AbstractAsyncClient extends FactoryHandler {
 		this.writeBufSize = writeBufSize;
 		this.toWrite = new LinkedBlockingQueue<>(100);
 		this.asyncSocket = asyncSocket;
-		this.remoteAddress = asyncSocket.getRemoteAddress();
+		this.fbb = new FixedByteBuffer(writeBufSize, 64, 64);
 		asyncSocket.setOption(StandardSocketOptions.SO_RCVBUF, readBufSize);
 		asyncSocket.setOption(StandardSocketOptions.SO_SNDBUF, writeBufSize);
-		asyncSocket.setOption(StandardSocketOptions.TCP_NODELAY, true);
+//		asyncSocket.setOption(StandardSocketOptions.TCP_NODELAY, true);
 	}
 
 	public void setHandlers() {
@@ -62,101 +85,45 @@ public abstract class AbstractAsyncClient extends FactoryHandler {
 			return false;
 		if (!(arg0 instanceof AbstractAsyncClient))
 			return false;
-		return hashCode() == ((AbstractAsyncClient) arg0).hashCode();
+		return instance == ((AbstractAsyncClient) arg0).instance;
 	}
 
 	@Override
 	public int hashCode() {
-		if (remoteAddress == null)
-			return 0;
-		return getRemoteAddress().hashCode();
+		return instance;
 	}
 
 	public void startReadHandler() {
 		startReadHandler(timeout, timeoutunit);
 	}
 
+	@SuppressWarnings("nls")
 	public void startReadHandler(long t, TimeUnit tu) {
 		this.timeout = t;
 		this.timeoutunit = tu;
-		asyncSocket.read(readHandler.readBuffer, timeout, timeoutunit, readHandler.readBuffer, readHandler);
-	}
-
-	public boolean offerWrite(byte[] b) {
-		ByteBuffer bb = ByteBuffer.allocateDirect(b.length);
-		bb.put(b);
-		bb.position(0);
-		return offerWrite(bb);
-	}
-
-	public boolean offerWrite(ByteBuffer bb) {
-		if (toWrite.offer(bb)) {
-			checkWrite();
-			return true;
+		try {
+			this.remoteAddress = asyncSocket.getRemoteAddress();
+			this.localAddress = asyncSocket.getLocalAddress();
+		} catch (IOException ex) {
+			System.err.println("could not get local/remote socket address");
 		}
-		return false;
+
+		PositionedByteBuf next = readHandler.fbb.getAvailableBuffer();
+		asyncSocket.read(next.get(), timeout, timeoutunit, next, readHandler);
+	}
+
+	public FixedByteBuffer getBuffer() {
+		return fbb;
 	}
 
 	public boolean putWrite(byte[] b) {
-		ByteBuffer bb = ByteBuffer.allocateDirect(b.length);
-		bb.put(b);
-		bb.position(0);
-		return putWrite(bb);
+		return putWrite(ByteBuffer.wrap(b));
 	}
 
 	public boolean putWrite(ByteBuffer bb) {
-		return putWrite(bb, 1, TimeUnit.MINUTES);
-	}
-
-	public boolean putWrite(ByteBuffer bb, long timeout, TimeUnit unit) {
-		List<ByteBuffer> list = new ArrayList<>();
-		if (bb.remaining() > writeBufSize) {
-			while (bb.hasRemaining()) {
-				byte[] arr = new byte[Math.min(bb.remaining(), writeBufSize)];
-				bb.get(arr);
-				list.add(ByteBuffer.wrap(arr));
-			}
-		} else {
-			list.add(bb);
-		}
-		synchronized (this) {
-
-//			ByteBuffer last = list.get(list.size() - 1);
-//			if(writeBufSize - last.remaining() > 42 + space) {
-//				Packet fill = new Packet(Packet.FILL);
-//				fill.setSerializable(new byte[writeBufSize - last.remaining() - 42 - space]);
-//				ByteBuffer filled = ByteBuffer.allocate(writeBufSize - space);
-//				filled.put(last.array());
-//				filled.put(fill.toBytes().array());
-//				list.set(list.size() - 1, filled);
-//			}
-			try {
-				for (int i = 0; i < list.size(); i++) {
-					int size = list.get(i).remaining();
-					toWrite.offer(list.get(i), timeout, unit);
-					incrementeSent(size);
-					if (writeHandler.canWrite() && !(i < list.size() - 1 && toWrite.remainingCapacity() > 0))
-						checkWrite();
-				}
-			} catch (InterruptedException e) {
-				System.err.println("interrupted write: " + e);
-				return false;
-			}
-		}
+		fbb.put(bb);
 		checkWrite();
 		return true;
-	}
-
-	protected void incrementeSent(int size) {
-		if (stamp + TimeUnit.SECONDS.toMillis(10) < System.currentTimeMillis()) {
-			stamp = System.currentTimeMillis();
-			sent[(int) (pos.incrementAndGet() % sent.length)] = size;
-			rateLimit = AbstractAsyncWriteHandler
-					.calcRateLimit((int) (sent[(int) ((pos.get() + 1) % sent.length)] / 10));
-		} else {
-			sent[(int) (pos.get() % sent.length)] += size;
-		}
-
 	}
 
 	public int getWritingQueueSize() {
@@ -166,16 +133,12 @@ public abstract class AbstractAsyncClient extends FactoryHandler {
 	public void checkWrite() {
 		lock.lock();
 		try {
-			if (toWrite.isEmpty())
+			if (!fbb.canRead())
 				return;
+
 			if (writeHandler.canWrite()) {
-				ByteBuffer bb = toWrite.poll();
-				ByteBuffer peek = null;
-				while ((peek = toWrite.peek()) != null && bb.remaining() + peek.remaining() <= writeBufSize) {
-					bb = ByteBuffer.allocateDirect(bb.remaining() + peek.remaining()).put(bb).put(toWrite.poll())
-							.position(0);
-				}
-				writeHandler.write(bb);
+				PositionedByteBuf pbb = fbb.read();
+				writeHandler.write(pbb);
 			}
 		} finally {
 			lock.unlock();
@@ -198,6 +161,10 @@ public abstract class AbstractAsyncClient extends FactoryHandler {
 		return asyncSocket;
 	}
 
+	public SocketAddress getLocalAddress() {
+		return localAddress;
+	}
+
 	public SocketAddress getRemoteAddress() {
 		return remoteAddress;
 	}
@@ -215,7 +182,7 @@ public abstract class AbstractAsyncClient extends FactoryHandler {
 
 	public abstract boolean isConnectionValid();
 
-	public abstract void onBytesReceive(byte[] bytes);
+	public abstract void onBytesReceive(ByteBuffer bytes);
 
 	public abstract void onConnect();
 

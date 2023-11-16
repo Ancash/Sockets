@@ -53,13 +53,13 @@ public abstract class AbstractAsyncClientWrapper<S extends AbstractAsyncClient, 
 		return chatClient.putWrite(b);
 	}
 
-	public boolean offerWrite(byte[] b) {
-		return chatClient.offerWrite(b);
-	}
-
-	public boolean offerWrite(ByteBuffer b) {
-		return chatClient.offerWrite(b);
-	}
+//	public boolean offerWrite(byte[] b) {
+//		return chatClient.offerWrite(b);
+//	}
+//
+//	public boolean offerWrite(ByteBuffer b) {
+//		return chatClient.offerWrite(b);
+//	}
 
 	public S getClient() {
 		return chatClient;

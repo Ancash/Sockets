@@ -6,6 +6,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import de.ancash.datastructures.tuples.Duplet;
 import de.ancash.libs.org.bukkit.event.EventManager;
 import de.ancash.sockets.events.ClientPacketReceiveEvent;
+import de.ancash.sockets.io.PositionedByteBuf;
 import de.ancash.sockets.packet.Packet;
 import de.ancash.sockets.packet.UnfinishedPacket;
 
@@ -26,13 +27,17 @@ public class AsyncPacketClientPacketWorker implements Runnable {
 		while (true) {
 			try {
 				Duplet<AsyncPacketClient, UnfinishedPacket> unfinishedPacket = queue.take();
-				byte[] bytes = unfinishedPacket.getSecond().getBytes();
+				unfinishedPacket.getSecond().getBuffer().owner = Thread.currentThread();
+				PositionedByteBuf buffer = unfinishedPacket.getSecond().getBuffer();
 				Packet p = new Packet(unfinishedPacket.getSecond().getHeader());
 				try {
-					p.reconstruct(bytes);
+					p.reconstruct(buffer.get());
 				} catch (IOException e) {
 					e.printStackTrace();
 					continue;
+				} finally {
+					unfinishedPacket.getSecond().getBuffer().owner = null;
+					unfinishedPacket.getFirst().unblockBuffer(unfinishedPacket.getSecond().getBuffer());
 				}
 				EventManager.callEvent(new ClientPacketReceiveEvent(unfinishedPacket.getFirst(), p));
 			} catch (InterruptedException e) {

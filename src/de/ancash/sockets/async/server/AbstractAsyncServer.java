@@ -3,21 +3,21 @@ package de.ancash.sockets.async.server;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
-import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import de.ancash.sockets.async.FactoryHandler;
+import de.ancash.sockets.async.client.AbstractAsyncClient;
 
 public abstract class AbstractAsyncServer extends FactoryHandler {
 
+	static final AtomicInteger cnt = new AtomicInteger();
+
 	private final String address;
 	private final int port;
-	private int threads = Runtime.getRuntime().availableProcessors();
 	private int readBufSize = 8 * 1024;
 	private int writeBufSize = 8 * 1024;
-	private AsynchronousChannelGroup asyncChannelGroup;
 	private AsynchronousServerSocketChannel listener;
 
 	public AbstractAsyncServer(String address, int port) {
@@ -26,30 +26,18 @@ public abstract class AbstractAsyncServer extends FactoryHandler {
 	}
 
 	public void start() throws IOException {
-		asyncChannelGroup = AsynchronousChannelGroup.withThreadPool(Executors.newFixedThreadPool(threads));
-		listener = AsynchronousServerSocketChannel.open(asyncChannelGroup).bind(new InetSocketAddress(address, port));
+		listener = AsynchronousServerSocketChannel.open(AbstractAsyncClient.asyncChannelGroup)
+				.bind(new InetSocketAddress(address, port));
 		listener.accept(listener, getAsyncAcceptHandlerFactory().newInstance(this));
 	}
 
 	public synchronized void stop() throws IOException {
-		if (asyncChannelGroup == null)
-			return;
-		asyncChannelGroup.shutdownNow();
 		listener.close();
-		asyncChannelGroup = null;
 		listener = null;
 	}
 
 	public SocketAddress getLocalAddress() throws IOException {
 		return listener.getLocalAddress();
-	}
-
-	public int getThreads() {
-		return threads;
-	}
-
-	public void setThreads(int i) {
-		this.threads = i;
 	}
 
 	public int getWriteBufSize() {

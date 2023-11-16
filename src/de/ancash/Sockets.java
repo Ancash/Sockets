@@ -4,10 +4,15 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.LockSupport;
 import java.util.logging.Level;
 
 import de.ancash.cli.CLI;
@@ -16,12 +21,17 @@ import de.ancash.loki.impl.SimpleLokiPluginManagerImpl;
 import de.ancash.loki.logger.PluginOutputFormatter;
 import de.ancash.loki.plugin.LokiPluginClassLoader;
 import de.ancash.loki.plugin.LokiPluginLoader;
+import de.ancash.misc.ConversionUtil;
 import de.ancash.misc.io.IFormatter;
 import de.ancash.misc.io.ILoggerListener;
 import de.ancash.misc.io.LoggerUtils;
 import de.ancash.misc.io.SerializationUtils;
+import de.ancash.sockets.async.impl.packet.client.AsyncPacketClient;
+import de.ancash.sockets.async.impl.packet.client.AsyncPacketClientFactory;
 import de.ancash.sockets.async.impl.packet.server.AsyncPacketServer;
 import de.ancash.sockets.packet.Packet;
+import de.ancash.sockets.packet.PacketCallback;
+import de.ancash.sockets.packet.PacketCombiner;
 
 public class Sockets {
 
@@ -51,111 +61,127 @@ public class Sockets {
 		}
 	}
 
-//	static void testLatency() throws IOException, InterruptedException {
-//		AsyncPacketServer aps = new AsyncPacketServer("localhost", 54321, 6);
-//		aps.start();
+	static void testLatency() throws IOException, InterruptedException {
+		AsyncPacketServer aps = new AsyncPacketServer("localhost", 54321, 1);
+		aps.start();
+		Thread.sleep(1000);
+		for (int i = 0; i < 1; i++) {
+			int o = i;
+			new Thread(() -> {
+				try {
+					Thread.currentThread().setName("cl - " + o);
+					AsyncPacketClient cl = new AsyncPacketClientFactory().newInstance("localhost", 54321, 1024 * 8, 1024 * 8, 1);
+					Thread.sleep(1000);
+					testLatency0(cl);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}).start();
+		}
+	}
+
+	static void testLatency0(AsyncPacketClient cl) throws InterruptedException {
+		Packet packet = new Packet(Packet.PING_PONG);
+		packet.isClientTarget(false);
+		AtomicLong total = new AtomicLong();
+		AtomicInteger cnt = new AtomicInteger();
+		packet.setObject(System.nanoTime());
+		packet.setPacketCallback(new PacketCallback() {
+
+			@Override
+			public void call(Object result) {
+				Packet p = new Packet(Packet.PING_PONG);
+				total.addAndGet(System.nanoTime() - (long) result);
+				if (cnt.incrementAndGet() % 100 == 0) {
+					System.out.println((total.get() / cnt.get()) + " ns/req");
+
+				}
+				p.resetResponse();
+				p.setObject(System.nanoTime());
+				p.isClientTarget(false);
+				p.setPacketCallback(this);
+				cl.write(p);
+			}
+		});
+		cl.write(packet);
+//		System.out.println(total.get() / f / 1000D + " micros/packet");
 //		Thread.sleep(1000);
-//		for (int i = 0; i < 10; i++) {
-//			int o = i;
-//			new Thread(() -> {
-//				try {
-//					Thread.currentThread().setName("cl - " + o);
-//					AsyncPacketClient cl = new AsyncPacketClientFactory().newInstance("localhost", 54321, 1024 * 8,
-//							1024 * 8, 1);
-//					Thread.sleep(1000);
-//					testLatency0(cl);
-//				} catch (Exception e) {
-//					// TODO: handle exception
-//				}
-//			}).start();
-//		}
-//	}
-//
-//	static void testLatency0(AsyncPacketClient cl) throws InterruptedException {
-//		Packet packet = new Packet(Packet.PING_PONG);
-//		packet.setAwaitResponse(true);
-//		packet.isClientTarget(false);
-//		long total = 0;
-//		int f = 50000;
-//		for (int i = 0; i < f; i++) {
-//			packet.setSerializable(System.nanoTime());
-//			cl.write(packet);
-//			Optional<Packet> opt = packet.awaitResponse(100);
-//			total += System.nanoTime() - (long) opt.get().getSerializable();
-////			if(i % 10000 == 0)
-////				System.out.println(i);
-//			packet.resetResponse();
-//		}
-//		System.out.println(total / f / 1000D + " micros/packet");
 //		testLatency0(cl);
-//	}
-//
-//	static void testThroughput() throws IOException, InterruptedException {
-//		AsyncPacketServer aps = new AsyncPacketServer("localhost", 54321, 4);
-//		aps.setThreads(4);
-//		aps.start();
-//		Thread.sleep(1000);
-//		for (int i = 0; i < 10; i++) {
-//			int o = i;
-//			new Thread(() -> {
-//				try {
-//					Thread.currentThread().setName("cl - " + o);
-//					AsyncPacketClient cl = new AsyncPacketClientFactory().newInstance("localhost", 54321, 1024 * 8,
-//							1024 * 8, 1);
-//					Thread.sleep(1000);
-//					now = System.currentTimeMillis();
-//					testThroughput0(cl);
-//				} catch (Exception e) {
-//					e.printStackTrace();
-//				}
-//			}).start();
-//		}
-//	}
-//
-//	static long now = System.currentTimeMillis();
-//	static AtomicLong cnt = new AtomicLong();;
-//
-//	static void testThroughput0(AsyncPacketClient cl) throws InterruptedException {
-//
-//		AtomicLong sent = new AtomicLong();
-//
-//		Packet packet = new Packet(Packet.PING_PONG);
-//		int pl = 1024 * 64;
-//		packet.setSerializable(new byte[pl]);
-//		int size = packet.toBytes().remaining();
-//		int f = 10000;
-//		for (int i = 0; i < f; i++) {
-//			packet = new Packet(Packet.PING_PONG);
-//			packet.isClientTarget(false);
-//			packet.setSerializable(new byte[pl]);
-//			packet.setPacketCallback(new PacketCallback() {
-//
-//				@Override
-//				public void call(Object result) {
-//					sent.decrementAndGet();
-//					if (cnt.incrementAndGet() % 1000 == 0)
-//						System.out.println(
-//								((cnt.get() * size * 2) / 1024D) / ((System.currentTimeMillis() - now + 1D) / 1000D)
-//										+ " kbytes/s");
-//				}
-//			});
-//			cl.write(packet);
-//			sent.incrementAndGet();
-//		}
-//		testThroughput0(cl);
-//	}
+	}
+
+	static void testThroughput() throws IOException, InterruptedException {
+		AsyncPacketServer aps = new AsyncPacketServer("ryzen2400g", 54321, 1);
+		aps.start();
+		Thread.sleep(1000);
+		for (int i = 0; i < 1; i++) {
+			int o = i;
+			new Thread(() -> {
+				try {
+					Thread.currentThread().setName("cl - " + o);
+					AsyncPacketClient cl = new AsyncPacketClientFactory().newInstance("ryzen2400g", 54321, 1024 * 8,
+							1024 * 8, 1);
+					while (!cl.isConnected())
+						Thread.sleep(1);
+					testThroughput0(cl);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}).start();
+		}
+	}
+
+	static long now = System.currentTimeMillis();
+	static AtomicLong cnt = new AtomicLong();
+
+	static void testThroughput0(AsyncPacketClient cl) throws InterruptedException {
+
+		AtomicLong sent = new AtomicLong();
+
+		Packet packet = new Packet(Packet.PING_PONG);
+		int pl = 1;
+		packet.setObject(new byte[pl]);
+		int size = packet.toBytes().remaining();
+		int f = 10000;
+		byte[] bb = new byte[pl];
+		for (int i = 0; i < f; i++) {
+			packet = new Packet(Packet.PING_PONG);
+			packet.isClientTarget(false);
+			packet.setObject(bb);
+			packet.setPacketCallback(new PacketCallback() {
+
+				@Override
+				public void call(Object result) {
+					sent.decrementAndGet();
+					if (cnt.incrementAndGet() % 1000 == 0)
+						System.out.println(
+								((cnt.get() * size * 2) / 1024D) / ((System.currentTimeMillis() - now + 1D) / 1000D)
+										+ " kbytes/s");
+				}
+			});
+			cl.write(packet);
+			sent.incrementAndGet();
+		}
+		testThroughput0(cl);
+	}
 
 	private static File log;
 	private static FileOutputStream fos;
+
+	public static void sleep(long nanos) {
+		long stop = System.nanoTime() + nanos;
+		while (stop > System.nanoTime()) {
+			LockSupport.parkNanos(1_000);
+		}
+	}
 
 	@SuppressWarnings("nls")
 	public static void main(String... args)
 			throws InterruptedException, NumberFormatException, UnknownHostException, IOException {
 		System.out.println("Starting Sockets...");
-//		testThroughput();
+		testThroughput();
 //		testLatency();
-//		if(true)
-//			return;
+		if (true)
+			return;
 		PluginOutputFormatter pof = new PluginOutputFormatter("[" + IFormatter.PART_DATE_TIME + "] " + "["
 				+ IFormatter.THREAD_NAME + "/" + IFormatter.COLOR + IFormatter.LEVEL + IFormatter.RESET + "] ["
 				+ PluginOutputFormatter.PLUGIN_NAME + "] " + IFormatter.COLOR + IFormatter.MESSAGE + IFormatter.RESET,

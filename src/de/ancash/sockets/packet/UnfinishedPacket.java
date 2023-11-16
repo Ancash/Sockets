@@ -3,22 +3,19 @@ package de.ancash.sockets.packet;
 import java.util.HashMap;
 import java.util.Map;
 
+import de.ancash.sockets.io.PositionedByteBuf;
+
 public class UnfinishedPacket {
 
-	private byte[] bytes;
 	private short header;
-
+	PositionedByteBuf buffer;
+	
 	private final Map<String, Object> someStuff = new HashMap<>();
 
-	public byte[] getBytes() {
-		return bytes;
+	public PositionedByteBuf getBuffer() {
+		return buffer;
 	}
-
-	public UnfinishedPacket setBytes(byte[] bytes) {
-		this.bytes = bytes;
-		return this;
-	}
-
+	
 	public Object remove(String key) {
 		return someStuff.remove(key);
 	}

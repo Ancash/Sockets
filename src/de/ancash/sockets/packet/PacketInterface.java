@@ -17,7 +17,7 @@ public interface PacketInterface {
 	 *
 	 * @param source The ByteBuffer to reconstruct this PacketInterface from
 	 */
-	public void reconstruct(byte[] bytes) throws IOException;
+	public void reconstruct(ByteBuffer buffer) throws IOException;
 
 	/**
 	 * Get the contents of this PacketInterface as a ByteBuffer

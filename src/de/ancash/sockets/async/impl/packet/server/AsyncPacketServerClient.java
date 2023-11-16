@@ -1,6 +1,7 @@
 package de.ancash.sockets.async.impl.packet.server;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.util.List;
 
@@ -12,20 +13,17 @@ import de.ancash.sockets.packet.UnfinishedPacket;
 public class AsyncPacketServerClient extends AbstractAsyncClient {
 
 	protected final AsyncPacketServer server;
-	protected final PacketCombiner packetCombiner = new PacketCombiner();
+	protected final PacketCombiner packetCombiner;
 
 	public AsyncPacketServerClient(AbstractAsyncServer asyncIOServer, AsynchronousSocketChannel asyncSocket,
 			int readBufSize, int writeBufSize) throws IOException {
 		super(asyncSocket, readBufSize, writeBufSize);
+		packetCombiner = new PacketCombiner(1024 * 128, readBufSize);
 		this.server = (AsyncPacketServer) asyncIOServer;
 		setAsyncWriteHandlerFactory(asyncIOServer.getAsyncWriteHandlerFactory());
 		setAsyncReadHandlerFactory(asyncIOServer.getAsyncReadHandlerFactory());
 		setConnected(true);
 		setHandlers();
-	}
-
-	public void setMaxPacketSize(int i) {
-		packetCombiner.setMaxSize(i);
 	}
 
 	public int getMaxPacketSize() {
@@ -37,7 +35,7 @@ public class AsyncPacketServerClient extends AbstractAsyncClient {
 	}
 
 	@Override
-	public void onBytesReceive(byte[] bytes) {
+	public void onBytesReceive(ByteBuffer bytes) {
 		List<UnfinishedPacket> l;
 		try {
 			l = packetCombiner.put(bytes);
@@ -51,6 +49,8 @@ public class AsyncPacketServerClient extends AbstractAsyncClient {
 
 			}
 			return;
+		} finally {
+			
 		}
 		for (UnfinishedPacket unfinished : l)
 			server.onPacket(unfinished, this);

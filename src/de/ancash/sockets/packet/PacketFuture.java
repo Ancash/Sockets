@@ -34,7 +34,7 @@ public class PacketFuture {
 			Optional<Packet> optional = packet.awaitResponse(unit.toMillis(timeout));
 			if (!optional.isPresent())
 				return Optional.empty();
-			return Optional.ofNullable((T) optional.get().getSerializable());
+			return Optional.ofNullable((T) optional.get().getObject());
 		} catch (InterruptedException e) {
 			return Optional.empty();
 		}

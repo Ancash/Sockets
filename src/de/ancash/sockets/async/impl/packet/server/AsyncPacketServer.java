@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import de.ancash.datastructures.tuples.Duplet;
 import de.ancash.datastructures.tuples.Tuple;
@@ -21,37 +22,26 @@ import de.ancash.sockets.packet.UnfinishedPacket;
 
 public class AsyncPacketServer extends AbstractAsyncServer {
 
-	private final ArrayBlockingQueue<Duplet<UnfinishedPacket, AsyncPacketServerClient>> unfishedPackets = new ArrayBlockingQueue<>(
+	private final LinkedBlockingQueue<Duplet<UnfinishedPacket, AsyncPacketServerClient>> unfishedPackets = new LinkedBlockingQueue<>(
 			1000);
 	private final ExecutorService workerPool = IThreadPoolExecutor
 			.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 	private final Set<AsyncPacketServerClient> clients = new HashSet<>();
-//	private final DelegatingLoadBalancingMultiConsumerDisruptor<UnfinishedPacketEvent> worker;
 
 	public AsyncPacketServer(String address, int port, int packetWorker) {
 		super(address, port);
-//		worker = new DelegatingLoadBalancingMultiConsumerDisruptor<UnfinishedPacketEvent>(UnfinishedPacketEvent::new,
-//				1024 * 2, ProducerType.MULTI, new SleepingWaitStrategy(0, 1),
-//				IntStream.range(0, packetWorker).boxed().map(i -> new AsyncPacketServerPacketWorker(this, i + 1))
-//						.toArray(AsyncPacketServerPacketWorker[]::new));
-		setReadBufSize(1024 * 16);
-		setWriteBufSize(1024 * 16);
+		setReadBufSize(1024 * 64);
+		setWriteBufSize(1024 * 64);
 		setAsyncAcceptHandlerFactory(new AsyncPacketServerAcceptHandlerFactory());
 		setAsyncReadHandlerFactory(new AsyncPacketServerReadHandlerFactory(this));
 		setAsyncWriteHandlerFactory(new AsyncPacketClientWriteHandlerFactory());
 		setAsyncClientFactory(new AsyncPacketServerClientFactory());
 		for (int i = 0; i < packetWorker; i++)
-			workerPool.submit(new AsyncPacketServerPacketWorker(this, i + 1));
+			workerPool.submit(new AsyncPacketServerPacketWorker(this, i));
 	}
 
 	protected final void onPacket(UnfinishedPacket unfinishedPacket, AsyncPacketServerClient sender) {
 		unfishedPackets.offer(Tuple.of(unfinishedPacket, sender));
-//		System.out.println("publishing up");
-//		worker.publishEvent((e, seq) -> {
-//			e.client = sender;
-//			e.packet = unfinishedPacket;
-//		});
-//		System.out.println("published up");
 	}
 
 	@Override
@@ -67,8 +57,8 @@ public class AsyncPacketServer extends AbstractAsyncServer {
 		synchronized (clients) {
 			clients.add(cl);
 		}
-		System.out.println(cl.getRemoteAddress() + " connected!");
 		cl.startReadHandler();
+		System.out.println(cl.getRemoteAddress() + " connected!");
 		EventManager.callEvent(new ClientConnectEvent(cl));
 	}
 

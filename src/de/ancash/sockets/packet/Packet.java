@@ -1,14 +1,10 @@
 package de.ancash.sockets.packet;
 
-import static de.ancash.misc.ConversionUtil.*;
-
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.Optional;
 
-import de.ancash.misc.ConversionUtil;
 import de.ancash.misc.ReflectionUtils;
 import de.ancash.misc.io.SerializationUtils;
 
@@ -17,7 +13,6 @@ public class Packet implements PacketInterface, Serializable, Cloneable {
 	private static final long serialVersionUID = 962998206232520827L;
 
 	public static final short PING_PONG = 32723;
-	public static final short FILL = 1;
 
 	private byte[] HEADER_BYTES;
 
@@ -27,13 +22,13 @@ public class Packet implements PacketInterface, Serializable, Cloneable {
 	private transient Object awaitObject = new Object();
 
 	private long longValue = 0L;
-	private Serializable obj;
+	private Object obj;
 	private short header;
 	private boolean isClientTarget = true;
 
 	public Packet(short header) {
 		this.header = header;
-		HEADER_BYTES = ConversionUtil.from(header);
+		HEADER_BYTES = SerializationUtil.shortToBytes(header);
 	}
 
 	@Override
@@ -115,15 +110,15 @@ public class Packet implements PacketInterface, Serializable, Cloneable {
 		longValue = System.nanoTime();
 	}
 
-	public final boolean hasObj() {
+	public final boolean hasObject() {
 		return obj != null;
 	}
 
-	public final Serializable getSerializable() {
+	public final Object getObject() {
 		return obj;
 	}
 
-	public final Packet setSerializable(Serializable value) {
+	public final Packet setObject(Object value) {
 		obj = value;
 		return this;
 	}
@@ -134,21 +129,26 @@ public class Packet implements PacketInterface, Serializable, Cloneable {
 	}
 
 	@Override
-	public void reconstruct(byte[] bytes) throws IOException {
-		if (bytes.length < 15)
+	public void reconstruct(ByteBuffer buffer) throws IOException {
+		if (buffer.limit() < 15)
 			return;
-		int size = bytesToInt(Arrays.copyOfRange(bytes, 0, 4));
-		this.header = bytesToShort(bytes[4], bytes[5]);
-		longValue = ((bytes[6] & 0xFFL) << 56) | ((bytes[7] & 0xFFL) << 48) | ((bytes[8] & 0xFFL) << 40)
-				| ((bytes[9] & 0xFFL) << 32) | ((bytes[10] & 0xFFL) << 24) | ((bytes[11] & 0xFFL) << 16)
-				| ((bytes[12] & 0xFFL) << 8) | ((bytes[13] & 0xFFL));
-		isClientTarget = bytes[14] == 0;
+		byte[] temp = new byte[4];
+		buffer.get(temp);
+		int size = SerializationUtil.bytesToInt(temp);
+		temp = new byte[2];
+		buffer.get(temp);
+		this.header = SerializationUtil.bytesToShort(temp);
+		longValue = ((buffer.get() & 0xFFL) << 56) | ((buffer.get() & 0xFFL) << 48) | ((buffer.get() & 0xFFL) << 40)
+				| ((buffer.get() & 0xFFL) << 32) | ((buffer.get() & 0xFFL) << 24) | ((buffer.get() & 0xFFL) << 16)
+				| ((buffer.get() & 0xFFL) << 8) | ((buffer.get() & 0xFFL));
+		isClientTarget = buffer.get() == 0;
 		if (size > 15) {
-			byte[] serializableBytes = Arrays.copyOfRange(bytes, 15, bytes.length);
+			temp = new byte[buffer.remaining()];
+			buffer.get(temp);
 			try {
-				obj = (Serializable) SerializationUtils.deserializeWithClassLoaders(serializableBytes);
-			} catch (Exception e) {
-				throw new IOException("Could not deserialize", e);
+				obj = SerializationUtils.deserializeWithClassLoaders(temp);
+			} catch (ClassNotFoundException | IOException e) {
+				throw new IOException(e);
 			}
 		}
 	}
@@ -163,7 +163,7 @@ public class Packet implements PacketInterface, Serializable, Cloneable {
 			try {
 				serializedBytes = SerializationUtils.serializeToBytes(obj);
 			} catch (IOException e) {
-				e.printStackTrace();
+				throw new IllegalStateException(e);
 			}
 		}
 		// length = size + header + isClientTarget + timeStamp + serializable
@@ -173,8 +173,8 @@ public class Packet implements PacketInterface, Serializable, Cloneable {
 		bytes[1] = (byte) (length >>> 16);
 		bytes[2] = (byte) (length >>> 8);
 		bytes[3] = (byte) (length);
-		bytes[4] = HEADER_BYTES[1];
-		bytes[5] = HEADER_BYTES[0];
+		bytes[4] = HEADER_BYTES[0];
+		bytes[5] = HEADER_BYTES[1];
 		bytes[6] = (byte) (longValue >>> 56);
 		bytes[7] = (byte) (longValue >>> 48);
 		bytes[8] = (byte) (longValue >>> 40);
@@ -188,6 +188,8 @@ public class Packet implements PacketInterface, Serializable, Cloneable {
 		ByteBuffer bb = ByteBuffer.allocateDirect(bytes.length);
 		bb.put(bytes);
 		bb.position(0);
+		bb.limit(bytes.length);
+		bb.mark();
 		return bb;
 	}
 

@@ -122,7 +122,7 @@ public class FilePacket implements Serializable {
 
 	public Packet toPacket() {
 		Packet packet = new Packet(HEADER);
-		packet.setSerializable(this);
+		packet.setObject(this);
 		packet.setAwaitResponse(true);
 		packet.isClientTarget(false);
 		return packet;
