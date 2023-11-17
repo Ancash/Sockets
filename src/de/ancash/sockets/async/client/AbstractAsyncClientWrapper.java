@@ -45,12 +45,12 @@ public abstract class AbstractAsyncClientWrapper<S extends AbstractAsyncClient, 
 		}
 	}
 
-	public boolean putWrite(byte[] b) {
-		return chatClient.putWrite(b);
+	public void putWrite(byte[] b) throws InterruptedException {
+		chatClient.putWrite(b);
 	}
 
-	public boolean putWrite(ByteBuffer b) {
-		return chatClient.putWrite(b);
+	public void putWrite(ByteBuffer b) throws InterruptedException {
+		chatClient.putWrite(b);
 	}
 
 //	public boolean offerWrite(byte[] b) {

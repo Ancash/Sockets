@@ -30,8 +30,8 @@ public class AsyncPacketServer extends AbstractAsyncServer {
 
 	public AsyncPacketServer(String address, int port, int packetWorker) {
 		super(address, port);
-		setReadBufSize(1024 * 64);
-		setWriteBufSize(1024 * 64);
+		setReadBufSize(1024 * 128);
+		setWriteBufSize(1024 * 128);
 		setAsyncAcceptHandlerFactory(new AsyncPacketServerAcceptHandlerFactory());
 		setAsyncReadHandlerFactory(new AsyncPacketServerReadHandlerFactory(this));
 		setAsyncWriteHandlerFactory(new AsyncPacketClientWriteHandlerFactory());
@@ -41,7 +41,11 @@ public class AsyncPacketServer extends AbstractAsyncServer {
 	}
 
 	protected final void onPacket(UnfinishedPacket unfinishedPacket, AsyncPacketServerClient sender) {
-		unfishedPackets.offer(Tuple.of(unfinishedPacket, sender));
+		try {
+			unfishedPackets.put(Tuple.of(unfinishedPacket, sender));
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 
 	@Override
@@ -74,10 +78,11 @@ public class AsyncPacketServer extends AbstractAsyncServer {
 		return unfishedPackets.take();
 	}
 
-	public void writeAllExcept(Packet reconstructed, AsyncPacketServerClient sender) {
-		ByteBuffer bb = reconstructed.toBytes();
+	public void writeAllExcept(Packet reconstructed, AsyncPacketServerClient sender) throws InterruptedException {
 		synchronized (clients) {
-			clients.stream().filter(client -> !client.equals(sender)).forEach(c -> c.putWrite(bb));
+			for(AsyncPacketServerClient cl : clients)
+				if(!cl.equals(sender))
+					cl.putWrite(reconstructed.toBytes());
 		}
 	}
 }

@@ -40,10 +40,10 @@ public class AsyncPacketServerClient extends AbstractAsyncClient {
 		try {
 			l = packetCombiner.put(bytes);
 		} catch (Exception ex) {
-			System.err.println(getRemoteAddress() + " threw an exception during read: " + ex);
-			ex.printStackTrace();
-			System.err.println("Disconnecting " + getRemoteAddress());
 			try {
+				System.err.println(getRemoteAddress() + " threw an exception during read: " + ex);
+				ex.printStackTrace();
+				System.err.println("Disconnecting " + getRemoteAddress());
 				getAsyncSocketChannel().close();
 			} catch (IOException e) {
 

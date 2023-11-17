@@ -1,27 +1,38 @@
 package de.ancash.sockets.async.client;
 
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.CompletionHandler;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import de.ancash.Sockets;
 import de.ancash.sockets.io.PositionedByteBuf;
 
 public abstract class AbstractAsyncWriteHandler implements CompletionHandler<Integer, PositionedByteBuf> {
 
-	static final ExecutorService writerPool = Executors
-			.newFixedThreadPool(Math.max(Runtime.getRuntime().availableProcessors() / 2, 1), new ThreadFactory() {
+	static final ExecutorService writerPool = Executors.newFixedThreadPool(1, new ThreadFactory() {
 
-				int cnt = 0;
+		int cnt = 0;
+
+		@Override
+		public synchronized Thread newThread(Runnable r) {
+			Thread t = new Thread(r, "AsyncWriteHandler-" + cnt++);
+			t.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
 
 				@Override
-				public synchronized Thread newThread(Runnable r) {
-					return new Thread(r, "AsyncWriteHandler-" + cnt++);
+				public void uncaughtException(Thread arg0, Throwable arg1) {
+					System.err.println(arg0.getName() + " threw exception while writing");
+					arg1.printStackTrace();
 				}
 			});
+			return t;
+		}
+	});
 
 	public static class CheckWriteEvent {
 		public AbstractAsyncClient client;
@@ -31,6 +42,7 @@ public abstract class AbstractAsyncWriteHandler implements CompletionHandler<Int
 	protected final AbstractAsyncClient client;
 	protected AtomicBoolean canWrite = new AtomicBoolean(true);
 	protected long lastWrite;
+	public Thread writer;
 
 	public AbstractAsyncWriteHandler(AbstractAsyncClient asyncSocket) {
 		this.client = asyncSocket;
@@ -43,16 +55,24 @@ public abstract class AbstractAsyncWriteHandler implements CompletionHandler<Int
 			return;
 		}
 		if (bb.get().hasRemaining()) {
-			writerPool.submit(() -> client.getAsyncSocketChannel().write(bb.get(), bb, this));
+			writerPool.submit(() -> {
+				writer = Thread.currentThread();
+				client.getAsyncSocketChannel().write(bb.get(), bb, this);
+			});
 		} else {
 			client.fbb.unblock(bb);
 			lastWrite = System.nanoTime();
+			writer = null;
+			client.writing.set(false);
 			writerPool.submit(() -> {
-				client.writeHandler.canWrite.set(true);
-				client.checkWrite();
+				canWrite.set(true);
+				try {
+					client.checkWrite();
+				} catch (InterruptedException e) {
+					failed(e, bb);
+				}
 			});
 		}
-
 	}
 
 	@Override
@@ -68,7 +88,11 @@ public abstract class AbstractAsyncWriteHandler implements CompletionHandler<Int
 	public boolean write(PositionedByteBuf bb) {
 		if (!canWrite.compareAndSet(true, false))
 			throw new WritePendingException();
-		writerPool.submit(() -> client.getAsyncSocketChannel().write(bb.get(), bb, this));
+		client.writing.set(true);
+		writerPool.submit(() -> {
+			writer = Thread.currentThread();
+			client.getAsyncSocketChannel().write(bb.get(), bb, this);
+		});
 		return true;
 	}
 }

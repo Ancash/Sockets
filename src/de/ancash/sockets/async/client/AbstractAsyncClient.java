@@ -6,6 +6,11 @@ import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.AsynchronousSocketChannel;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -14,6 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
+import de.ancash.Sockets;
 import de.ancash.sockets.async.FactoryHandler;
 import de.ancash.sockets.io.FixedByteBuffer;
 import de.ancash.sockets.io.PositionedByteBuf;
@@ -48,7 +54,6 @@ public abstract class AbstractAsyncClient extends FactoryHandler {
 	protected final AsynchronousSocketChannel asyncSocket;
 	protected AbstractAsyncReadHandler readHandler;
 	protected AbstractAsyncWriteHandler writeHandler;
-	protected final LinkedBlockingQueue<ByteBuffer> toWrite;
 	protected SocketAddress remoteAddress;
 	protected SocketAddress localAddress;
 	protected final AtomicBoolean isConnected = new AtomicBoolean(false);
@@ -58,6 +63,8 @@ public abstract class AbstractAsyncClient extends FactoryHandler {
 	protected AtomicLong pos = new AtomicLong();
 	protected long stamp = System.currentTimeMillis();
 	protected final FixedByteBuffer fbb;
+	public final AtomicBoolean reading = new AtomicBoolean();
+	public final AtomicBoolean writing = new AtomicBoolean();
 
 	@SuppressWarnings("nls")
 	public AbstractAsyncClient(AsynchronousSocketChannel asyncSocket, int readBufSize, int writeBufSize)
@@ -66,9 +73,8 @@ public abstract class AbstractAsyncClient extends FactoryHandler {
 			throw new IllegalArgumentException("Invalid AsynchronousSocketChannel");
 		this.readBufSize = readBufSize;
 		this.writeBufSize = writeBufSize;
-		this.toWrite = new LinkedBlockingQueue<>(100);
 		this.asyncSocket = asyncSocket;
-		this.fbb = new FixedByteBuffer(writeBufSize, 64, 64);
+		this.fbb = new FixedByteBuffer(writeBufSize, 64, 1);
 		asyncSocket.setOption(StandardSocketOptions.SO_RCVBUF, readBufSize);
 		asyncSocket.setOption(StandardSocketOptions.SO_SNDBUF, writeBufSize);
 //		asyncSocket.setOption(StandardSocketOptions.TCP_NODELAY, true);
@@ -108,37 +114,38 @@ public abstract class AbstractAsyncClient extends FactoryHandler {
 			System.err.println("could not get local/remote socket address");
 		}
 
-		PositionedByteBuf next = readHandler.fbb.getAvailableBuffer();
-		asyncSocket.read(next.get(), timeout, timeoutunit, next, readHandler);
+		reading.set(true);
+		ByteBuffer buf = ByteBuffer.allocate(readBufSize);
+		asyncSocket.read(buf, timeout, timeoutunit, buf, readHandler);
 	}
 
 	public FixedByteBuffer getBuffer() {
 		return fbb;
 	}
 
-	public boolean putWrite(byte[] b) {
-		return putWrite(ByteBuffer.wrap(b));
+	public void putWrite(byte[] b) throws InterruptedException {
+		putWrite(ByteBuffer.wrap(b));
 	}
 
-	public boolean putWrite(ByteBuffer bb) {
+	public void putWrite(ByteBuffer bb) throws InterruptedException {
 		fbb.put(bb);
+//		bufs.put(bb);
 		checkWrite();
-		return true;
 	}
 
-	public int getWritingQueueSize() {
-		return toWrite.size();
-	}
+	LinkedBlockingQueue<ByteBuffer> bufs = new LinkedBlockingQueue<>(1000);
 
-	public void checkWrite() {
+	public void checkWrite() throws InterruptedException {
 		lock.lock();
 		try {
 			if (!fbb.canRead())
 				return;
-
+//			if(bufs.isEmpty())
+//				return;
 			if (writeHandler.canWrite()) {
 				PositionedByteBuf pbb = fbb.read();
 				writeHandler.write(pbb);
+//				writeHandler.write(bufs.take());
 			}
 		} finally {
 			lock.unlock();

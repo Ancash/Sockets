@@ -20,7 +20,7 @@ public class FixedByteBuffer {
 		new Thread(() -> {
 			byte[] bb = new byte[1024 * 64];
 			while (true) {
-				fbb.put(bb);
+//				fbb.put(bb);
 			}
 		}).start();
 		long cnt = 0;
@@ -46,6 +46,7 @@ public class FixedByteBuffer {
 	private final AtomicBoolean[] locked;
 	private final LinkedBlockingQueue<ByteBuffer> overflow;
 	private final AtomicReference<Long> testLock = new AtomicReference<>(null);
+	public Runnable r;
 
 	public FixedByteBuffer(int bufSize, int buffers, int queueSize) {
 		overflow = new LinkedBlockingQueue<>(queueSize);
@@ -113,7 +114,7 @@ public class FixedByteBuffer {
 		}
 	}
 
-	private boolean canWrite() {
+	public boolean canWrite() {
 		return !locked[writeBufPos.get()].get() && (writeBufPos.get() + 1) % buffers.length != readBufPos.get();
 	}
 
@@ -136,6 +137,7 @@ public class FixedByteBuffer {
 					put0(iter.next());
 				}
 			}
+			long l = System.currentTimeMillis() + 1000;
 			while (iter.hasNext()) {
 				if (canWrite() && !overflow.isEmpty()) {
 					checkOverflow();
@@ -143,6 +145,11 @@ public class FixedByteBuffer {
 				if (overflow.remainingCapacity() > 0)
 					overflow.add(iter.next());
 				else {
+					if (l < System.currentTimeMillis()) {
+						if (r != null)
+							r.run();
+						l += 1000;
+					}
 					Sockets.sleep(10_000);
 				}
 			}
@@ -163,9 +170,5 @@ public class FixedByteBuffer {
 		cur.put(b);
 		cur.reset();
 		writeBufPos.set((writeBufPos.get() + 1) % buffers.length);
-	}
-
-	public void put(byte[] b) {
-		put(ByteBuffer.wrap(b));
 	}
 }

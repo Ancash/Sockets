@@ -69,7 +69,7 @@ public class AsyncPacketClient extends AbstractAsyncClient implements Listener {
 
 	}
 
-	public final void write(Packet packet) {
+	public final void write(Packet packet) throws InterruptedException {
 		try {
 			while (!lock.compareAndSet(null, Thread.currentThread().getId())
 					&& !lock.compareAndSet(Thread.currentThread().getId(), Thread.currentThread().getId()))

@@ -15,11 +15,11 @@ public abstract class AbstractAsyncPacketClientWrapper
 		super(AsyncPacketClientFactory.class);
 	}
 
-	public PacketFuture sendPacket(Packet packet) {
+	public PacketFuture sendPacket(Packet packet) throws InterruptedException {
 		return sendPacket(packet, null);
 	}
 
-	public PacketFuture sendPacket(Packet packet, UUID uuid) {
+	public PacketFuture sendPacket(Packet packet, UUID uuid) throws InterruptedException {
 		chatClient.write(packet);
 		return new PacketFuture(packet, uuid);
 	}

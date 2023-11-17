@@ -87,7 +87,7 @@ public class BigByteBuffer {
 //		AtomicReference<Long> lock = locks[arrPos];
 		long tid = Thread.currentThread().getId();
 		try {
-			while (!locks.compareAndSet(null, tid) || !locks.compareAndSet(tid, tid))
+			while (!locks.compareAndSet(null, tid) && !locks.compareAndSet(tid, tid))
 				Sockets.sleep(10_000);
 			long l = System.currentTimeMillis() + 1000;
 			while (!isBiggerAvailable(bsc)) {
@@ -107,7 +107,7 @@ public class BigByteBuffer {
 
 			if (bufPos == bufs.length) {
 				Sockets.sleep(10_000);
-				return blockBuffer(bsc.getSize() + 1);
+				return blockBuffer(bsc.getSize());
 			}
 //			System.out.println("blocked " + bufPos);
 			PositionedByteBuf res = bufs[bufPos];

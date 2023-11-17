@@ -15,7 +15,7 @@ import de.ancash.sockets.io.PositionedByteBuf;
 
 public class PacketCombiner {
 
-//	private static final BigByteBuffer bbb = new BigByteBuffer(ByteSizeConstants._128, ByteSizeConstants._1024x256, 8);
+	private static final BigByteBuffer bbb = new BigByteBuffer(ByteSizeConstants._128, ByteSizeConstants._1024x256, 8);
 
 	static AtomicInteger id = new AtomicInteger();
 
@@ -84,7 +84,7 @@ public class PacketCombiner {
 	final int iid = id.getAndIncrement();
 	private int arrPos = 4;
 	private byte[] sizeBytes = new byte[4];
-	private final ByteBufferDistributor bufferBuffer;
+//	private final ByteBufferDistributor bufferBuffer;
 	private PositionedByteBuf buffer;
 
 	private int size;
@@ -98,7 +98,7 @@ public class PacketCombiner {
 	}
 
 	public PacketCombiner(int maxSize, int bufSize, int buffers) {
-		bufferBuffer = new ByteBufferDistributor(maxSize, buffers);
+//		bufferBuffer = new ByteBufferDistributor(maxSize, buffers);
 		this.maxSize = maxSize;
 	}
 
@@ -117,25 +117,26 @@ public class PacketCombiner {
 					hasSize = true;
 					long l = System.currentTimeMillis() + 1000;
 //					buffer = bbb.blockBuffer(size);
-					while ((buffer = bufferBuffer.getAvailableBuffer()) == null) {
-						Sockets.sleep(10_000);
-						if (l < System.currentTimeMillis()) {
-							System.err.println(Thread.currentThread().getName()
-									+ "no free buffer available/all used up in current invokation. reconstruced " + i
-									+ " packets cap " + bufferBuffer.capacity());
-							l = System.currentTimeMillis() + 1000;
-							for (PositionedByteBuf pbb : bufferBuffer.buffers)
-								if (pbb.owner != null) {
+					buffer = new PositionedByteBuf(ByteBuffer.allocate(size), -1);
+//					while ((buffer = bufferBuffer.getAvailableBuffer()) == null) {
+//						Sockets.sleep(10_000);
+//						if (l < System.currentTimeMillis()) {
+//							System.err.println(Thread.currentThread().getName()
+//									+ "no free buffer available/all used up in current invokation. reconstruced " + i
+//									+ " packets cap " + bufferBuffer.capacity());
+//							l = System.currentTimeMillis() + 1000;
+//							for (PositionedByteBuf pbb : bufferBuffer.buffers)
+//								if (pbb.owner != null) {
 //									System.out.println(pbb.owner.getName() + ":--------------");
 //									for(StackTraceElement e : pbb.owner.getStackTrace())
 //										System.out.println(e.getClassName() + ":" + e.getMethodName()  +":" + e.getLineNumber());
-								}
+//								}
 
 ////							buffer = new PositionedByteBuf(ByteBuffer.allocate(size), -1);
 ////							allocateNew = true;
 ////							break;
-						}
-					}
+//						}
+//					}
 					buffer.get().limit(size);
 					added = 0;
 					buffer.get().put(sizeBytes);
@@ -177,6 +178,6 @@ public class PacketCombiner {
 
 	public void unblockBuffer(PositionedByteBuf buffer2) {
 //		bbb.unblockBuffer(buffer2);
-		bufferBuffer.unblockBuffer(buffer2);
+//		bufferBuffer.unblockBuffer(buffer2);
 	}
 }

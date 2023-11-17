@@ -39,7 +39,7 @@ public class Sockets {
 	private static final SimpleLokiPluginManagerImpl pluginManager = new SimpleLokiPluginManagerImpl(
 			new File("plugins"));
 
-	public static void writeAll(Packet p) {
+	public static void writeAll(Packet p) throws InterruptedException {
 		serverSocket.writeAllExcept(p, null);
 	}
 
@@ -100,7 +100,12 @@ public class Sockets {
 				p.setObject(System.nanoTime());
 				p.isClientTarget(false);
 				p.setPacketCallback(this);
-				cl.write(p);
+				try {
+					cl.write(p);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		});
 		cl.write(packet);
@@ -118,8 +123,8 @@ public class Sockets {
 			new Thread(() -> {
 				try {
 					Thread.currentThread().setName("cl - " + o);
-					AsyncPacketClient cl = new AsyncPacketClientFactory().newInstance("ryzen2400g", 54321, 1024 * 8,
-							1024 * 8, 1);
+					AsyncPacketClient cl = new AsyncPacketClientFactory().newInstance("ryzen2400g", 54321, 1024 * 32,
+							1024 * 32, 1);
 					while (!cl.isConnected())
 						Thread.sleep(1);
 					testThroughput0(cl);
@@ -135,33 +140,34 @@ public class Sockets {
 
 	static void testThroughput0(AsyncPacketClient cl) throws InterruptedException {
 
-		AtomicLong sent = new AtomicLong();
+		while(true) {
+			AtomicLong sent = new AtomicLong();
 
-		Packet packet = new Packet(Packet.PING_PONG);
-		int pl = 1;
-		packet.setObject(new byte[pl]);
-		int size = packet.toBytes().remaining();
-		int f = 10000;
-		byte[] bb = new byte[pl];
-		for (int i = 0; i < f; i++) {
-			packet = new Packet(Packet.PING_PONG);
-			packet.isClientTarget(false);
-			packet.setObject(bb);
-			packet.setPacketCallback(new PacketCallback() {
+			Packet packet = new Packet(Packet.PING_PONG);
+			int pl = 1024 * 16;
+			packet.setObject(new byte[pl]);
+			int size = packet.toBytes().remaining();
+			int f = 10000;
+			byte[] bb = new byte[pl];
+			for (int i = 0; i < f; i++) {
+				packet = new Packet(Packet.PING_PONG);
+				packet.isClientTarget(false);
+				packet.setObject(bb);
+				packet.setPacketCallback(new PacketCallback() {
 
-				@Override
-				public void call(Object result) {
-					sent.decrementAndGet();
-					if (cnt.incrementAndGet() % 1000 == 0)
-						System.out.println(
-								((cnt.get() * size * 2) / 1024D) / ((System.currentTimeMillis() - now + 1D) / 1000D)
-										+ " kbytes/s");
-				}
-			});
-			cl.write(packet);
-			sent.incrementAndGet();
+					@Override
+					public void call(Object result) {
+						sent.decrementAndGet();
+						if (cnt.incrementAndGet() % 1000 == 0)
+							System.out.println(
+									((cnt.get() * size * 2) / 1024D) / ((System.currentTimeMillis() - now + 1D) / 1000D)
+											+ " kbytes/s");
+					}
+				});
+				cl.write(packet);
+				sent.incrementAndGet();
+			}
 		}
-		testThroughput0(cl);
 	}
 
 	private static File log;
