@@ -19,24 +19,22 @@ public class AsyncForwardConnection extends AbstractAsyncClient {
 	private final ServerDescription server;
 	private boolean connected = true;
 
-	public AsyncForwardConnection(AsyncForwardServer server, AsynchronousSocketChannel asyncSocket, int readBufSize,
-			int writeBufSize) throws IOException {
+	public AsyncForwardConnection(AsyncForwardServer server, AsynchronousSocketChannel asyncSocket, int readBufSize, int writeBufSize)
+			throws IOException {
 		super(asyncSocket, readBufSize, writeBufSize);
 		this.forwardServer = server;
 		this.server = getServerWithMinimalLoad(forwardServer);
-		this.partner = new AsyncForwardConnection(this.server, server, createAsyncSocket(this), readBufSize,
-				writeBufSize, this);
+		this.partner = new AsyncForwardConnection(this.server, server, createAsyncSocket(this), readBufSize, writeBufSize, this);
 		setConnected(true);
-		System.out.println(
-				getRemoteAddress() + " <--> " + asyncSocket.getLocalAddress() + " <--> " + partner.getRemoteAddress());
+		System.out.println(getRemoteAddress() + " <--> " + asyncSocket.getLocalAddress() + " <--> " + partner.getRemoteAddress());
 		setAsyncReadHandlerFactory(server.getAsyncReadHandlerFactory());
 		setAsyncWriteHandlerFactory(server.getAsyncWriteHandlerFactory());
 		setHandlers();
 		startReadHandler();
 	}
 
-	AsyncForwardConnection(ServerDescription desc, AsyncForwardServer server, AsynchronousSocketChannel asyncSocket,
-			int readBufSize, int writeBufSize, AsyncForwardConnection partner) throws IOException {
+	AsyncForwardConnection(ServerDescription desc, AsyncForwardServer server, AsynchronousSocketChannel asyncSocket, int readBufSize,
+			int writeBufSize, AsyncForwardConnection partner) throws IOException {
 		super(asyncSocket, readBufSize, writeBufSize);
 		setConnected(true);
 		this.forwardServer = server;
@@ -56,8 +54,7 @@ public class AsyncForwardConnection extends AbstractAsyncClient {
 		partner.putWrite(bb);
 	}
 
-	private static synchronized AsynchronousSocketChannel createAsyncSocket(AsyncForwardConnection c)
-			throws IOException {
+	private static synchronized AsynchronousSocketChannel createAsyncSocket(AsyncForwardConnection c) throws IOException {
 		if (c.server == null)
 			throw new IOException("All servers are dead!");
 		AsynchronousSocketChannel asyncSocket = AsynchronousSocketChannel.open();

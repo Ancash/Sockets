@@ -9,14 +9,12 @@ import de.ancash.libs.org.bukkit.event.Listener;
 import de.ancash.sockets.events.ClientConnectEvent;
 import de.ancash.sockets.events.ClientDisconnectEvent;
 
-public abstract class AbstractAsyncClientWrapper<S extends AbstractAsyncClient, T extends AbstractAsyncClientFactory<S>>
-		implements Listener {
+public abstract class AbstractAsyncClientWrapper<S extends AbstractAsyncClient, T extends AbstractAsyncClientFactory<S>> implements Listener {
 
 	protected S chatClient;
 	protected final T factory;
 	protected int readBuf = 256 * 1024;
 	protected int writeBuf = 256 * 1024;
-	protected int threads = 3;
 
 	@SuppressWarnings("deprecation")
 	public AbstractAsyncClientWrapper(Class<T> clazz) {
@@ -38,7 +36,7 @@ public abstract class AbstractAsyncClientWrapper<S extends AbstractAsyncClient, 
 			chatClient = null;
 		}
 		try {
-			chatClient = factory.newInstance(address, port, readBuf, writeBuf, threads);
+			chatClient = factory.newInstance(address, port, readBuf, writeBuf);
 			return true;
 		} catch (IOException e) {
 			return false;

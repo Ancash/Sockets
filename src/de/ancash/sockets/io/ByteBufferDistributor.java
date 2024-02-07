@@ -65,7 +65,7 @@ public class ByteBufferDistributor {
 	public PositionedByteBuf getAvailableBuffer() {
 		try {
 			while (!readLock.compareAndSet(false, true))
-				Sockets.sleep(10_000);
+				Sockets.sleepMillis(1);
 			if (!isBufferAvailable())
 				return null;
 			PositionedByteBuf pbb = getAvailableBuffer0();

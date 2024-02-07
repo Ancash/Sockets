@@ -9,8 +9,7 @@ import java.util.stream.Collectors;
 
 import de.ancash.sockets.packet.Packet;
 
-public class AsyncClientPool<S extends AbstractAsyncClient, T extends AbstractAsyncClientFactory<S>>
-		implements Runnable {
+public class AsyncClientPool<S extends AbstractAsyncClient, T extends AbstractAsyncClientFactory<S>> implements Runnable {
 
 	private final AsyncClientPoolWatcher watcher = new AsyncClientPoolWatcher();
 	private final String address;
@@ -23,8 +22,7 @@ public class AsyncClientPool<S extends AbstractAsyncClient, T extends AbstractAs
 	private boolean enabled = false;
 	private final Set<S> clients = new HashSet<>();
 
-	public AsyncClientPool(Class<T> tClazz, String address, int port, int connections, int readBufSize,
-			int writeBufSize, int threadsPerCon) {
+	public AsyncClientPool(Class<T> tClazz, String address, int port, int connections, int readBufSize, int writeBufSize, int threadsPerCon) {
 		try {
 			this.factory = tClazz.getConstructor().newInstance();
 			this.port = port;
@@ -33,8 +31,8 @@ public class AsyncClientPool<S extends AbstractAsyncClient, T extends AbstractAs
 			this.readBufSize = readBufSize;
 			this.writeBufSize = writeBufSize;
 			this.threadsPerCon = threadsPerCon;
-		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
-				| NoSuchMethodException | SecurityException e) {
+		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
+				| SecurityException e) {
 			throw new IllegalStateException(e);
 		}
 	}
@@ -59,8 +57,7 @@ public class AsyncClientPool<S extends AbstractAsyncClient, T extends AbstractAs
 
 			synchronized (clients) {
 				clients.add(newCon);
-				System.out.println("Established new connection to " + address + ":" + port + " (" + clients.size() + "/"
-						+ connections + ")");
+				System.out.println("Established new connection to " + address + ":" + port + " (" + clients.size() + "/" + connections + ")");
 			}
 			return true;
 		} catch (IOException | InterruptedException e) {
@@ -77,8 +74,7 @@ public class AsyncClientPool<S extends AbstractAsyncClient, T extends AbstractAs
 		if (!enabled)
 			return false;
 		synchronized (clients) {
-			clients.stream().sorted((a, b) -> Integer.compare(a.getWritingQueueSize(), b.getWritingQueueSize()))
-					.findFirst().get().putWrite(bb);
+			clients.stream().sorted((a, b) -> Integer.compare(a.getWritingQueueSize(), b.getWritingQueueSize())).findFirst().get().putWrite(bb);
 		}
 		return true;
 	}
@@ -87,9 +83,8 @@ public class AsyncClientPool<S extends AbstractAsyncClient, T extends AbstractAs
 		if (!enabled)
 			return false;
 		synchronized (clients) {
-			AbstractAsyncClient client = clients.stream()
-					.sorted((a, b) -> Integer.compare(a.getWritingQueueSize(), b.getWritingQueueSize())).findFirst()
-					.get();
+			AbstractAsyncClient client = clients.stream().sorted((a, b) -> Integer.compare(a.getWritingQueueSize(), b.getWritingQueueSize()))
+					.findFirst().get();
 			client.putWrite(packet.toBytes());
 			return true;
 		}

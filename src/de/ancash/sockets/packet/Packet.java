@@ -33,8 +33,7 @@ public class Packet implements PacketInterface, Serializable, Cloneable {
 
 	@Override
 	public String toString() {
-		return "header=" + header + ", long=" + longValue + ", serializable="
-				+ (obj != null ? ReflectionUtils.toString(obj, false) : "null");
+		return "header=" + header + ", long=" + longValue + ", serializable=" + (obj != null ? ReflectionUtils.toString(obj, false) : "null");
 	}
 
 	@Override
@@ -138,9 +137,8 @@ public class Packet implements PacketInterface, Serializable, Cloneable {
 		temp = new byte[2];
 		buffer.get(temp);
 		this.header = SerializationUtil.bytesToShort(temp);
-		longValue = ((buffer.get() & 0xFFL) << 56) | ((buffer.get() & 0xFFL) << 48) | ((buffer.get() & 0xFFL) << 40)
-				| ((buffer.get() & 0xFFL) << 32) | ((buffer.get() & 0xFFL) << 24) | ((buffer.get() & 0xFFL) << 16)
-				| ((buffer.get() & 0xFFL) << 8) | ((buffer.get() & 0xFFL));
+		longValue = ((buffer.get() & 0xFFL) << 56) | ((buffer.get() & 0xFFL) << 48) | ((buffer.get() & 0xFFL) << 40) | ((buffer.get() & 0xFFL) << 32)
+				| ((buffer.get() & 0xFFL) << 24) | ((buffer.get() & 0xFFL) << 16) | ((buffer.get() & 0xFFL) << 8) | ((buffer.get() & 0xFFL));
 		isClientTarget = buffer.get() == 0;
 		if (size > 15) {
 			temp = new byte[buffer.remaining()];
@@ -185,7 +183,7 @@ public class Packet implements PacketInterface, Serializable, Cloneable {
 		bytes[13] = (byte) (longValue);
 		bytes[14] = (byte) (isClientTarget ? 0 : 1);
 		System.arraycopy(serializedBytes, 0, bytes, 15, serializedBytes.length);
-		ByteBuffer bb = ByteBuffer.allocateDirect(bytes.length);
+		ByteBuffer bb = ByteBuffer.allocate(bytes.length);
 		bb.put(bytes);
 		bb.position(0);
 		bb.limit(bytes.length);

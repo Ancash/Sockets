@@ -13,19 +13,15 @@ public class AsyncPacketClientFactory extends AbstractAsyncClientFactory<AsyncPa
 	static final AtomicLong cnt = new AtomicLong();
 
 	@Override
-	public AsyncPacketClient newInstance(AbstractAsyncServer asyncServer, AsynchronousSocketChannel socket,
-			int readBufSize, int writeBufSize) {
+	public AsyncPacketClient newInstance(AbstractAsyncServer asyncServer, AsynchronousSocketChannel socket, int readBufSize, int writeBufSize) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public AsyncPacketClient newInstance(String address, int port, int readBufSize, int writeBufSize, int threads)
-			throws IOException {
-		AsynchronousSocketChannel asyncSocket = AsynchronousSocketChannel.open(asyncChannelGroup);
-		AsyncPacketClient client = new AsyncPacketClient(asyncSocket, asyncChannelGroup, readBufSize, writeBufSize,
-				threads);
-		asyncSocket.connect(new InetSocketAddress(address, port), client,
-				client.getAsyncConnectHandlerFactory().newInstance(client));
+	public AsyncPacketClient newInstance(String address, int port, int readBufSize, int writeBufSize) throws IOException {
+		AsynchronousSocketChannel asyncSocket = AsynchronousSocketChannel.open(null);
+		AsyncPacketClient client = new AsyncPacketClient(asyncSocket, readBufSize, writeBufSize);
+		asyncSocket.connect(new InetSocketAddress(address, port), client, client.getAsyncConnectHandlerFactory().newInstance(client));
 		return client;
 	}
 }

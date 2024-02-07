@@ -9,7 +9,6 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
@@ -21,7 +20,6 @@ import de.ancash.loki.impl.SimpleLokiPluginManagerImpl;
 import de.ancash.loki.logger.PluginOutputFormatter;
 import de.ancash.loki.plugin.LokiPluginClassLoader;
 import de.ancash.loki.plugin.LokiPluginLoader;
-import de.ancash.misc.ConversionUtil;
 import de.ancash.misc.io.IFormatter;
 import de.ancash.misc.io.ILoggerListener;
 import de.ancash.misc.io.LoggerUtils;
@@ -31,13 +29,11 @@ import de.ancash.sockets.async.impl.packet.client.AsyncPacketClientFactory;
 import de.ancash.sockets.async.impl.packet.server.AsyncPacketServer;
 import de.ancash.sockets.packet.Packet;
 import de.ancash.sockets.packet.PacketCallback;
-import de.ancash.sockets.packet.PacketCombiner;
 
 public class Sockets {
 
 	private static AsyncPacketServer serverSocket;
-	private static final SimpleLokiPluginManagerImpl pluginManager = new SimpleLokiPluginManagerImpl(
-			new File("plugins"));
+	private static final SimpleLokiPluginManagerImpl pluginManager = new SimpleLokiPluginManagerImpl(new File("plugins"));
 
 	public static void writeAll(Packet p) throws InterruptedException {
 		serverSocket.writeAllExcept(p, null);
@@ -65,12 +61,12 @@ public class Sockets {
 		AsyncPacketServer aps = new AsyncPacketServer("localhost", 54321, 1);
 		aps.start();
 		Thread.sleep(1000);
-		for (int i = 0; i < 1; i++) {
+		for (int i = 0; i < 5; i++) {
 			int o = i;
 			new Thread(() -> {
 				try {
 					Thread.currentThread().setName("cl - " + o);
-					AsyncPacketClient cl = new AsyncPacketClientFactory().newInstance("localhost", 54321, 1024 * 8, 1024 * 8, 1);
+					AsyncPacketClient cl = new AsyncPacketClientFactory().newInstance("localhost", 54321, 1024 * 8, 1024 * 8);
 					Thread.sleep(1000);
 					testLatency0(cl);
 				} catch (Exception e) {
@@ -92,7 +88,7 @@ public class Sockets {
 			public void call(Object result) {
 				Packet p = new Packet(Packet.PING_PONG);
 				total.addAndGet(System.nanoTime() - (long) result);
-				if (cnt.incrementAndGet() % 100 == 0) {
+				if (cnt.incrementAndGet() % 5000 == 0) {
 					System.out.println((total.get() / cnt.get()) + " ns/req");
 
 				}
@@ -109,9 +105,6 @@ public class Sockets {
 			}
 		});
 		cl.write(packet);
-//		System.out.println(total.get() / f / 1000D + " micros/packet");
-//		Thread.sleep(1000);
-//		testLatency0(cl);
 	}
 
 	static void testThroughput() throws IOException, InterruptedException {
@@ -123,8 +116,7 @@ public class Sockets {
 			new Thread(() -> {
 				try {
 					Thread.currentThread().setName("cl - " + o);
-					AsyncPacketClient cl = new AsyncPacketClientFactory().newInstance("ryzen2400g", 54321, 1024 * 32,
-							1024 * 32, 1);
+					AsyncPacketClient cl = new AsyncPacketClientFactory().newInstance("ryzen2400g", 54321, 1024 * 32, 1024 * 32);
 					while (!cl.isConnected())
 						Thread.sleep(1);
 					testThroughput0(cl);
@@ -140,7 +132,7 @@ public class Sockets {
 
 	static void testThroughput0(AsyncPacketClient cl) throws InterruptedException {
 
-		while(true) {
+		while (true) {
 			AtomicLong sent = new AtomicLong();
 
 			Packet packet = new Packet(Packet.PING_PONG);
@@ -149,6 +141,7 @@ public class Sockets {
 			int size = packet.toBytes().remaining();
 			int f = 10000;
 			byte[] bb = new byte[pl];
+			ByteBuffer test = null;
 			for (int i = 0; i < f; i++) {
 				packet = new Packet(Packet.PING_PONG);
 				packet.isClientTarget(false);
@@ -158,15 +151,21 @@ public class Sockets {
 					@Override
 					public void call(Object result) {
 						sent.decrementAndGet();
-						if (cnt.incrementAndGet() % 1000 == 0)
-							System.out.println(
-									((cnt.get() * size * 2) / 1024D) / ((System.currentTimeMillis() - now + 1D) / 1000D)
-											+ " kbytes/s");
+						if (cnt.incrementAndGet() % 10000 == 0)
+							System.out.println(((cnt.get() * size * 2) / 1024D) / ((System.currentTimeMillis() - now + 1D) / 1000D) + " kbytes/s");
+//						System.out.println(cnt.get());
 					}
 				});
+//				if (test == null)
+//					test = packet.toBytes();
+//				cl.putWrite(test);
+//				test.reset();
 				cl.write(packet);
 				sent.incrementAndGet();
 			}
+//			while(sent.get() > 0)
+//				Thread.sleep(1);
+
 		}
 	}
 
@@ -176,28 +175,35 @@ public class Sockets {
 	public static void sleep(long nanos) {
 		long stop = System.nanoTime() + nanos;
 		while (stop > System.nanoTime()) {
-			LockSupport.parkNanos(1_000);
+			LockSupport.parkNanos(100_000);
+		}
+	}
+
+	public static void sleepMillis(long l) {
+		try {
+			Thread.sleep(l);
+		} catch (InterruptedException e) {
+			return;
 		}
 	}
 
 	@SuppressWarnings("nls")
-	public static void main(String... args)
-			throws InterruptedException, NumberFormatException, UnknownHostException, IOException {
+	public static void main(String... args) throws InterruptedException, NumberFormatException, UnknownHostException, IOException {
 		System.out.println("Starting Sockets...");
-		testThroughput();
+//		Thread.sleep(10000);
+//		testThroughput();
 //		testLatency();
-		if (true)
-			return;
-		PluginOutputFormatter pof = new PluginOutputFormatter("[" + IFormatter.PART_DATE_TIME + "] " + "["
-				+ IFormatter.THREAD_NAME + "/" + IFormatter.COLOR + IFormatter.LEVEL + IFormatter.RESET + "] ["
-				+ PluginOutputFormatter.PLUGIN_NAME + "] " + IFormatter.COLOR + IFormatter.MESSAGE + IFormatter.RESET,
+//		if (true)
+//			return;
+		PluginOutputFormatter pof = new PluginOutputFormatter(
+				"[" + IFormatter.PART_DATE_TIME + "] " + "[" + IFormatter.THREAD_NAME + "/" + IFormatter.COLOR + IFormatter.LEVEL + IFormatter.RESET
+						+ "] [" + PluginOutputFormatter.PLUGIN_NAME + "] " + IFormatter.COLOR + IFormatter.MESSAGE + IFormatter.RESET,
 				pluginManager, "\b\b\b");
 
 		LoggerUtils.setOut(Level.INFO, pof);
 		LoggerUtils.setErr(Level.SEVERE, pof);
 		LoggerUtils.setGlobalLogger(pof);
-		log = new File("logs/" + new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss").format(Calendar.getInstance().getTime())
-				+ ".log");
+		log = new File("logs/" + new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss").format(Calendar.getInstance().getTime()) + ".log");
 		log.mkdirs();
 		log.delete();
 		log.createNewFile();
@@ -207,8 +213,7 @@ public class Sockets {
 			@Override
 			public void onLog(String arg0) {
 				try {
-					fos.write(("\n" + arg0.replace("\t", "   ").replaceAll("\u001B\\[[;\\d]*m", "")
-							.replaceAll("\\P{Print}", "")).getBytes());
+					fos.write(("\n" + arg0.replace("\t", "   ").replaceAll("\u001B\\[[;\\d]*m", "").replaceAll("\\P{Print}", "")).getBytes());
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -232,11 +237,9 @@ public class Sockets {
 		System.out.println("Packet Worker: " + arguments.get("w"));
 		System.out.println("Loading plugins...");
 		pluginManager.loadJars();
-		pluginManager.getPluginLoader().stream().map(LokiPluginLoader::getClassLoader)
-				.forEach(SerializationUtils::addClazzLoader);
+		pluginManager.getPluginLoader().stream().map(LokiPluginLoader::getClassLoader).forEach(SerializationUtils::addClazzLoader);
 		System.out.println("Loaded Plugins!");
-		serverSocket = new AsyncPacketServer(arguments.get("h"), Integer.valueOf(arguments.get("p")),
-				Integer.valueOf(arguments.get("w")));
+		serverSocket = new AsyncPacketServer(arguments.get("h"), Integer.valueOf(arguments.get("p")), Integer.valueOf(arguments.get("w")));
 		try {
 			serverSocket.start();
 		} catch (IOException e) {
@@ -280,8 +283,8 @@ public class Sockets {
 			return;
 		case "plugins":
 			StringBuilder builder = new StringBuilder();
-			pluginManager.getPlugins().stream().map(SimpleLokiPluginImpl::getClass).map(Class::getClassLoader).forEach(
-					s -> builder.append(", " + ((LokiPluginClassLoader<?>) s).getLoader().getDescription().getName()));
+			pluginManager.getPlugins().stream().map(SimpleLokiPluginImpl::getClass).map(Class::getClassLoader)
+					.forEach(s -> builder.append(", " + ((LokiPluginClassLoader<?>) s).getLoader().getDescription().getName()));
 			System.out.println("Plugins: " + builder.toString().replaceFirst(", ", ""));
 			break;
 		default:

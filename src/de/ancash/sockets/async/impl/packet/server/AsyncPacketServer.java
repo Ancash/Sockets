@@ -1,17 +1,15 @@
 package de.ancash.sockets.async.impl.packet.server;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import de.ancash.datastructures.tuples.Duplet;
 import de.ancash.datastructures.tuples.Tuple;
-import de.ancash.ithread.IThreadPoolExecutor;
 import de.ancash.libs.org.bukkit.event.EventManager;
 import de.ancash.sockets.async.impl.packet.client.AsyncPacketClientWriteHandlerFactory;
 import de.ancash.sockets.async.server.AbstractAsyncServer;
@@ -22,16 +20,14 @@ import de.ancash.sockets.packet.UnfinishedPacket;
 
 public class AsyncPacketServer extends AbstractAsyncServer {
 
-	private final LinkedBlockingQueue<Duplet<UnfinishedPacket, AsyncPacketServerClient>> unfishedPackets = new LinkedBlockingQueue<>(
-			1000);
-	private final ExecutorService workerPool = IThreadPoolExecutor
-			.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+	private final LinkedBlockingQueue<Duplet<UnfinishedPacket, AsyncPacketServerClient>> unfishedPackets = new LinkedBlockingQueue<>(5000);
+	private final ExecutorService workerPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 	private final Set<AsyncPacketServerClient> clients = new HashSet<>();
 
 	public AsyncPacketServer(String address, int port, int packetWorker) {
 		super(address, port);
-		setReadBufSize(1024 * 128);
-		setWriteBufSize(1024 * 128);
+		setReadBufSize(1024 * 64);
+		setWriteBufSize(1024 * 64);
 		setAsyncAcceptHandlerFactory(new AsyncPacketServerAcceptHandlerFactory());
 		setAsyncReadHandlerFactory(new AsyncPacketServerReadHandlerFactory(this));
 		setAsyncWriteHandlerFactory(new AsyncPacketClientWriteHandlerFactory());
@@ -56,8 +52,7 @@ public class AsyncPacketServer extends AbstractAsyncServer {
 
 	@Override
 	public void onAccept(AsynchronousSocketChannel socket) throws IOException {
-		AsyncPacketServerClient cl = (AsyncPacketServerClient) getAsyncClientFactory().newInstance(this, socket,
-				getReadBufSize(), getWriteBufSize());
+		AsyncPacketServerClient cl = (AsyncPacketServerClient) getAsyncClientFactory().newInstance(this, socket, getReadBufSize(), getWriteBufSize());
 		synchronized (clients) {
 			clients.add(cl);
 		}
@@ -80,9 +75,13 @@ public class AsyncPacketServer extends AbstractAsyncServer {
 
 	public void writeAllExcept(Packet reconstructed, AsyncPacketServerClient sender) throws InterruptedException {
 		synchronized (clients) {
-			for(AsyncPacketServerClient cl : clients)
-				if(!cl.equals(sender))
+			for (AsyncPacketServerClient cl : clients)
+				if (!cl.equals(sender))
 					cl.putWrite(reconstructed.toBytes());
 		}
+	}
+
+	public boolean delayNextRead() {
+		return unfishedPackets.remainingCapacity() < 1000;
 	}
 }

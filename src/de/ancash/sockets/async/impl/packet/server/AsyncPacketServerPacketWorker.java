@@ -1,11 +1,11 @@
 package de.ancash.sockets.async.impl.packet.server;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import de.ancash.datastructures.tuples.Duplet;
 import de.ancash.libs.org.bukkit.event.EventManager;
 import de.ancash.sockets.events.ServerPacketReceiveEvent;
-import de.ancash.sockets.io.PositionedByteBuf;
 import de.ancash.sockets.packet.Packet;
 import de.ancash.sockets.packet.UnfinishedPacket;
 
@@ -43,15 +43,15 @@ public class AsyncPacketServerPacketWorker implements Runnable {
 			AsyncPacketServerClient sender = pair.getSecond();
 			try {
 				Packet reconstructed = new Packet(unfinishedPacket.getHeader());
-				PositionedByteBuf pbb = unfinishedPacket.getBuffer();
-				int startPos = pbb.get().position();
+				ByteBuffer pbb = unfinishedPacket.getBuffer();
+				int startPos = pbb.position();
 				switch (unfinishedPacket.getHeader()) {
 				case Packet.PING_PONG:
-					sender.putWrite(unfinishedPacket.getBuffer().get());
+					sender.putWrite(unfinishedPacket.getBuffer());
 					break;
 				default:
-					reconstructed.reconstruct(unfinishedPacket.getBuffer().get());
-					pbb.get().position(startPos);
+					reconstructed.reconstruct(unfinishedPacket.getBuffer());
+					pbb.position(startPos);
 					if (reconstructed.isClientTarget())
 						serverSocket.writeAllExcept(reconstructed, sender);
 					else
@@ -61,8 +61,6 @@ public class AsyncPacketServerPacketWorker implements Runnable {
 			} catch (Throwable ex) {
 				System.err.println("Could not process packet!:");
 				ex.printStackTrace();
-			} finally {
-				sender.packetCombiner.unblockBuffer(unfinishedPacket.getBuffer());
 			}
 
 		}

@@ -1,21 +1,20 @@
 package de.ancash.sockets.packet;
 
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
-
-import de.ancash.sockets.io.PositionedByteBuf;
 
 public class UnfinishedPacket {
 
 	private short header;
-	PositionedByteBuf buffer;
-	
+	ByteBuffer buffer;
+
 	private final Map<String, Object> someStuff = new HashMap<>();
 
-	public PositionedByteBuf getBuffer() {
+	public ByteBuffer getBuffer() {
 		return buffer;
 	}
-	
+
 	public Object remove(String key) {
 		return someStuff.remove(key);
 	}

@@ -18,7 +18,7 @@ public class PositionedByteBuf {
 		this.a = a;
 		this.b = b;
 	}
-	
+
 	public ByteBuffer get() {
 		return bb;
 	}

@@ -8,8 +8,7 @@ import de.ancash.sockets.events.ClientPacketReceiveEvent;
 import de.ancash.sockets.packet.Packet;
 import de.ancash.sockets.packet.PacketFuture;
 
-public abstract class AbstractAsyncPacketClientWrapper
-		extends AbstractAsyncClientWrapper<AsyncPacketClient, AsyncPacketClientFactory> {
+public abstract class AbstractAsyncPacketClientWrapper extends AbstractAsyncClientWrapper<AsyncPacketClient, AsyncPacketClientFactory> {
 
 	public AbstractAsyncPacketClientWrapper() {
 		super(AsyncPacketClientFactory.class);

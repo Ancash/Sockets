@@ -7,8 +7,7 @@ import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 
-public abstract class AbstractAsyncAcceptHandler
-		implements CompletionHandler<AsynchronousSocketChannel, AsynchronousServerSocketChannel> {
+public abstract class AbstractAsyncAcceptHandler implements CompletionHandler<AsynchronousSocketChannel, AsynchronousServerSocketChannel> {
 
 	private final AbstractAsyncServer asyncIOServer;
 

@@ -15,7 +15,7 @@ public class BigByteBuffer {
 		while (true) {
 			bbb.unblockBuffer(bbb.blockBuffer(12345));
 			cnt++;
-			if(cnt % 1000 == 0)
+			if (cnt % 1000 == 0)
 				System.out.println(cnt / ((System.nanoTime() - l) / 1_000_000_000D) + " bufs/sec");
 		}
 
@@ -29,7 +29,7 @@ public class BigByteBuffer {
 	private final AtomicBoolean[][] blocked;
 //	private final AtomicReference<Long>[] locks;
 	final AtomicReference<Long> locks = new AtomicReference<Long>(null);
-	
+
 	@SuppressWarnings("unchecked")
 	public BigByteBuffer(ByteSizeConstants from, ByteSizeConstants to, int minSize) {
 		if (from.ordinal() > to.ordinal())
@@ -88,11 +88,11 @@ public class BigByteBuffer {
 		long tid = Thread.currentThread().getId();
 		try {
 			while (!locks.compareAndSet(null, tid) && !locks.compareAndSet(tid, tid))
-				Sockets.sleep(10_000);
+				Sockets.sleepMillis(1);
 			long l = System.currentTimeMillis() + 1000;
 			while (!isBiggerAvailable(bsc)) {
-				Sockets.sleep(10_000);
-				if(l < System.currentTimeMillis()) {
+				Sockets.sleepMillis(1);
+				if (l < System.currentTimeMillis()) {
 					System.out.println("no bufs av");
 					l = System.currentTimeMillis() + 1000;
 				}
@@ -106,7 +106,7 @@ public class BigByteBuffer {
 					break;
 
 			if (bufPos == bufs.length) {
-				Sockets.sleep(10_000);
+				Sockets.sleepMillis(1);
 				return blockBuffer(bsc.getSize());
 			}
 //			System.out.println("blocked " + bufPos);
@@ -119,9 +119,9 @@ public class BigByteBuffer {
 			locks.compareAndSet(tid, null);
 		}
 	}
-	
+
 	public void unblockBuffer(PositionedByteBuf pbb) {
-		if(!blocked[pbb.getAId()][pbb.getBId()].compareAndSet(true, false))
+		if (!blocked[pbb.getAId()][pbb.getBId()].compareAndSet(true, false))
 			throw new IllegalArgumentException("cannot unblock free buffer");
 	}
 }

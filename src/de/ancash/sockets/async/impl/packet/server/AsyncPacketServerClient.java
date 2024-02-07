@@ -15,10 +15,10 @@ public class AsyncPacketServerClient extends AbstractAsyncClient {
 	protected final AsyncPacketServer server;
 	protected final PacketCombiner packetCombiner;
 
-	public AsyncPacketServerClient(AbstractAsyncServer asyncIOServer, AsynchronousSocketChannel asyncSocket,
-			int readBufSize, int writeBufSize) throws IOException {
+	public AsyncPacketServerClient(AbstractAsyncServer asyncIOServer, AsynchronousSocketChannel asyncSocket, int readBufSize, int writeBufSize)
+			throws IOException {
 		super(asyncSocket, readBufSize, writeBufSize);
-		packetCombiner = new PacketCombiner(1024 * 128, readBufSize);
+		packetCombiner = new PacketCombiner(1024 * 1024 * 8);
 		this.server = (AsyncPacketServer) asyncIOServer;
 		setAsyncWriteHandlerFactory(asyncIOServer.getAsyncWriteHandlerFactory());
 		setAsyncReadHandlerFactory(asyncIOServer.getAsyncReadHandlerFactory());
@@ -50,7 +50,7 @@ public class AsyncPacketServerClient extends AbstractAsyncClient {
 			}
 			return;
 		} finally {
-			
+
 		}
 		for (UnfinishedPacket unfinished : l)
 			server.onPacket(unfinished, this);
@@ -64,5 +64,10 @@ public class AsyncPacketServerClient extends AbstractAsyncClient {
 	@Override
 	public void onDisconnect(Throwable th) {
 		server.onDisconnect(this, th);
+	}
+
+	@Override
+	public boolean delayNextRead() {
+		return server.delayNextRead();
 	}
 }

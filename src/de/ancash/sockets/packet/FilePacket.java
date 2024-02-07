@@ -96,14 +96,6 @@ public class FilePacket implements Serializable {
 		return rootPacket.containsKey(root);
 	}
 
-//	public boolean isSourceSide() {
-//		return rootPacket.get(root) != null;
-//	}
-//	
-//	public boolean isRequestSide() {
-//		return rootPacket.get(root) == null;
-//	}
-
 	public FilePacket getRootPacket() {
 		return rootPacket.get(root);
 	}
@@ -137,7 +129,7 @@ public class FilePacket implements Serializable {
 		return ex;
 	}
 
-	public void handleSourceSide(AbstractAsyncClient client) throws IOException {
+	public void handleSourceSide(AbstractAsyncClient client) throws IOException, InterruptedException {
 		for (FilePacket fp : readFromFile())
 			client.putWrite(fp.toPacket().toBytes());
 	}
@@ -161,8 +153,8 @@ public class FilePacket implements Serializable {
 			File[] files = srcFile.listFiles();
 			if (files != null && files.length > 0)
 				for (File file : files)
-					packets.addAll(new FilePacket(src + "/" + file.getName(), target + "/" + file.getName(), false, buf)
-							.setRoot(root).readFromFile());
+					packets.addAll(
+							new FilePacket(src + "/" + file.getName(), target + "/" + file.getName(), false, buf).setRoot(root).readFromFile());
 			return packets;
 		}
 

@@ -7,32 +7,31 @@ import java.nio.channels.WritePendingException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import de.ancash.Sockets;
 import de.ancash.sockets.io.PositionedByteBuf;
 
-public abstract class AbstractAsyncWriteHandler implements CompletionHandler<Integer, PositionedByteBuf> {
+public abstract class AbstractAsyncByteBufWriteHandler implements CompletionHandler<Integer, PositionedByteBuf> {
 
-	static final ExecutorService writerPool = Executors.newFixedThreadPool(1, new ThreadFactory() {
+	static final ExecutorService writerPool = Executors.newFixedThreadPool(Math.max(1, Runtime.getRuntime().availableProcessors() / 6),
+			new ThreadFactory() {
 
-		int cnt = 0;
-
-		@Override
-		public synchronized Thread newThread(Runnable r) {
-			Thread t = new Thread(r, "AsyncWriteHandler-" + cnt++);
-			t.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+				int cnt = 0;
 
 				@Override
-				public void uncaughtException(Thread arg0, Throwable arg1) {
-					System.err.println(arg0.getName() + " threw exception while writing");
-					arg1.printStackTrace();
+				public synchronized Thread newThread(Runnable r) {
+					Thread t = new Thread(r, "AsyncWriteHandler-" + cnt++);
+					t.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+
+						@Override
+						public void uncaughtException(Thread arg0, Throwable arg1) {
+							System.err.println(arg0.getName() + " threw exception while writing");
+							arg1.printStackTrace();
+						}
+					});
+					return t;
 				}
 			});
-			return t;
-		}
-	});
 
 	public static class CheckWriteEvent {
 		public AbstractAsyncClient client;
@@ -42,9 +41,8 @@ public abstract class AbstractAsyncWriteHandler implements CompletionHandler<Int
 	protected final AbstractAsyncClient client;
 	protected AtomicBoolean canWrite = new AtomicBoolean(true);
 	protected long lastWrite;
-	public Thread writer;
 
-	public AbstractAsyncWriteHandler(AbstractAsyncClient asyncSocket) {
+	public AbstractAsyncByteBufWriteHandler(AbstractAsyncClient asyncSocket) {
 		this.client = asyncSocket;
 	}
 
@@ -54,29 +52,24 @@ public abstract class AbstractAsyncWriteHandler implements CompletionHandler<Int
 			failed(new ClosedChannelException(), bb);
 			return;
 		}
+
 		if (bb.get().hasRemaining()) {
-			writerPool.submit(() -> {
-				writer = Thread.currentThread();
-				client.getAsyncSocketChannel().write(bb.get(), bb, this);
-			});
+			client.getAsyncSocketChannel().write(bb.get(), bb, this);
+//			writerPool.submit(() -> client.getAsyncSocketChannel().write(bb.get(), bb, this));
 		} else {
 			client.fbb.unblock(bb);
 			lastWrite = System.nanoTime();
-			writer = null;
 			client.writing.set(false);
 			writerPool.submit(() -> {
 				canWrite.set(true);
-				try {
-					client.checkWrite();
-				} catch (InterruptedException e) {
-					failed(e, bb);
-				}
+				client.checkWrite();
 			});
 		}
 	}
 
 	@Override
 	public void failed(Throwable arg0, PositionedByteBuf arg1) {
+		arg0.printStackTrace();
 		client.setConnected(false);
 		client.onDisconnect(arg0);
 	}
@@ -89,10 +82,7 @@ public abstract class AbstractAsyncWriteHandler implements CompletionHandler<Int
 		if (!canWrite.compareAndSet(true, false))
 			throw new WritePendingException();
 		client.writing.set(true);
-		writerPool.submit(() -> {
-			writer = Thread.currentThread();
-			client.getAsyncSocketChannel().write(bb.get(), bb, this);
-		});
+		writerPool.submit(() -> client.getAsyncSocketChannel().write(bb.get(), bb, this));
 		return true;
 	}
 }

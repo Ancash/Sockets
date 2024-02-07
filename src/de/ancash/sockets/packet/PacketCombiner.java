@@ -6,16 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import de.ancash.Sockets;
 import de.ancash.misc.ConversionUtil;
-import de.ancash.sockets.io.BigByteBuffer;
-import de.ancash.sockets.io.ByteBufferDistributor;
-import de.ancash.sockets.io.ByteSizeConstants;
-import de.ancash.sockets.io.PositionedByteBuf;
 
 public class PacketCombiner {
-
-	private static final BigByteBuffer bbb = new BigByteBuffer(ByteSizeConstants._128, ByteSizeConstants._1024x256, 8);
 
 	static AtomicInteger id = new AtomicInteger();
 
@@ -23,8 +16,7 @@ public class PacketCombiner {
 		return 0;
 	}
 
-	public static void main(String[] args)
-			throws ClassNotFoundException, NoSuchFieldException, SecurityException, IOException {
+	public static void main(String[] args) throws ClassNotFoundException, NoSuchFieldException, SecurityException, IOException {
 //		Packet packet = new Packet(Packet.PING_PONG);
 //		int pl = 1024 * 127;
 //		byte[] a = new byte[pl];
@@ -73,19 +65,18 @@ public class PacketCombiner {
 		System.out.println(o.remaining());
 		System.out.println(o.position());
 		System.out.println(o.capacity());
-		PacketCombiner pc = new PacketCombiner(1024 * 128, 1024);
-		try {
-			System.out.println(pc.put(o).size());
-		} catch (Throwable th) {
-			th.printStackTrace();
-		}
+//		PacketCombiner pc = new PacketCombiner(1024 * 128);
+//		try {
+//			System.out.println(pc.put(o).size());
+//		} catch (Throwable th) {
+//			th.printStackTrace();
+//		}
 	}
 
 	final int iid = id.getAndIncrement();
 	private int arrPos = 4;
 	private byte[] sizeBytes = new byte[4];
-//	private final ByteBufferDistributor bufferBuffer;
-	private PositionedByteBuf buffer;
+	private ByteBuffer buffer;
 
 	private int size;
 
@@ -93,18 +84,12 @@ public class PacketCombiner {
 	private final int maxSize;
 	private int added = 0;
 
-	public PacketCombiner(int maxSize, int bufSize) {
-		this(maxSize, bufSize, bufSize / 14 + 1);
-	}
-
-	public PacketCombiner(int maxSize, int bufSize, int buffers) {
-//		bufferBuffer = new ByteBufferDistributor(maxSize, buffers);
+	public PacketCombiner(int maxSize) {
 		this.maxSize = maxSize;
 	}
 
 	@SuppressWarnings("nls")
 	public synchronized List<UnfinishedPacket> put(ByteBuffer buf) {
-		int i = 0;
 		List<UnfinishedPacket> restored = new ArrayList<>();
 		for (int pos = 0; pos < buf.limit();) {
 			if (!hasSize) {
@@ -115,58 +100,34 @@ public class PacketCombiner {
 					if (size <= 0 || size > maxSize)
 						throw new IllegalArgumentException("invalid size: " + size);
 					hasSize = true;
-					long l = System.currentTimeMillis() + 1000;
-//					buffer = bbb.blockBuffer(size);
-					buffer = new PositionedByteBuf(ByteBuffer.allocate(size), -1);
-//					while ((buffer = bufferBuffer.getAvailableBuffer()) == null) {
-//						Sockets.sleep(10_000);
-//						if (l < System.currentTimeMillis()) {
-//							System.err.println(Thread.currentThread().getName()
-//									+ "no free buffer available/all used up in current invokation. reconstruced " + i
-//									+ " packets cap " + bufferBuffer.capacity());
-//							l = System.currentTimeMillis() + 1000;
-//							for (PositionedByteBuf pbb : bufferBuffer.buffers)
-//								if (pbb.owner != null) {
-//									System.out.println(pbb.owner.getName() + ":--------------");
-//									for(StackTraceElement e : pbb.owner.getStackTrace())
-//										System.out.println(e.getClassName() + ":" + e.getMethodName()  +":" + e.getLineNumber());
-//								}
-
-////							buffer = new PositionedByteBuf(ByteBuffer.allocate(size), -1);
-////							allocateNew = true;
-////							break;
-//						}
-//					}
-					buffer.get().limit(size);
+					buffer = ByteBuffer.allocate(size);
+					buffer.limit(size);
 					added = 0;
-					buffer.get().put(sizeBytes);
+					buffer.put(sizeBytes);
 				}
 				pos++;
 				continue;
 			}
-			int canAdd = buffer.get().limit() - buffer.get().position();
+			int canAdd = buffer.limit() - buffer.position();
 			canAdd = Math.min(size - arrPos, canAdd);
 			canAdd = Math.min(buf.limit() - pos, canAdd);
 			int willAdd = canAdd;
 			buf.position(pos);
 			int oldLimit = buf.limit();
 			buf.limit(pos + willAdd);
-			buffer.get().put(buf);
+			buffer.put(buf);
 			buf.limit(oldLimit);
 			arrPos += willAdd;
 			pos += willAdd;
 
 			if (arrPos == size) {
-				UnfinishedPacket up = new UnfinishedPacket().setHeader(
-						SerializationUtil.bytesToShort(new byte[] { buffer.get().get(4), buffer.get().get(5) }));
-				buffer.get().position(0);
-				buffer.owner = Thread.currentThread();
+				UnfinishedPacket up = new UnfinishedPacket().setHeader(SerializationUtil.bytesToShort(new byte[] { buffer.get(4), buffer.get(5) }));
+				buffer.position(0);
 				up.buffer = buffer;
 				buffer = null;
 				restored.add(up);
 				hasSize = false;
 				arrPos = 4;
-				i++;
 			}
 		}
 		return restored;
@@ -174,10 +135,5 @@ public class PacketCombiner {
 
 	public int getMaxSize() {
 		return maxSize;
-	}
-
-	public void unblockBuffer(PositionedByteBuf buffer2) {
-//		bbb.unblockBuffer(buffer2);
-//		bufferBuffer.unblockBuffer(buffer2);
 	}
 }
