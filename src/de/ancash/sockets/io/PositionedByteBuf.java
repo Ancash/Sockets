@@ -7,7 +7,6 @@ public class PositionedByteBuf {
 	final ByteBuffer bb;
 	private final int a;
 	private final int b;
-	public Thread owner;
 
 	public PositionedByteBuf(ByteBuffer bb, int a) {
 		this(bb, a, -1);

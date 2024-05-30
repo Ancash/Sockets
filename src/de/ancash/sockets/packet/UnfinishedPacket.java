@@ -11,6 +11,10 @@ public class UnfinishedPacket {
 
 	private final Map<String, Object> someStuff = new HashMap<>();
 
+	public UnfinishedPacket(short header) {
+		this.header = header;
+	}
+	
 	public ByteBuffer getBuffer() {
 		return buffer;
 	}
@@ -21,10 +25,5 @@ public class UnfinishedPacket {
 
 	public short getHeader() {
 		return header;
-	}
-
-	public UnfinishedPacket setHeader(short bytesToShort) {
-		this.header = bytesToShort;
-		return this;
 	}
 }

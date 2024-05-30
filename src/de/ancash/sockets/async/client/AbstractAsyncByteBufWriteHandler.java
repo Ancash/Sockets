@@ -13,7 +13,7 @@ import de.ancash.sockets.io.PositionedByteBuf;
 
 public abstract class AbstractAsyncByteBufWriteHandler implements CompletionHandler<Integer, PositionedByteBuf> {
 
-	static final ExecutorService writerPool = Executors.newFixedThreadPool(Math.max(1, Runtime.getRuntime().availableProcessors() / 6),
+	static final ExecutorService writerPool = Executors.newFixedThreadPool(Math.max(1, 1),
 			new ThreadFactory() {
 
 				int cnt = 0;
@@ -40,7 +40,6 @@ public abstract class AbstractAsyncByteBufWriteHandler implements CompletionHand
 
 	protected final AbstractAsyncClient client;
 	protected AtomicBoolean canWrite = new AtomicBoolean(true);
-	protected long lastWrite;
 
 	public AbstractAsyncByteBufWriteHandler(AbstractAsyncClient asyncSocket) {
 		this.client = asyncSocket;
@@ -54,12 +53,10 @@ public abstract class AbstractAsyncByteBufWriteHandler implements CompletionHand
 		}
 
 		if (bb.get().hasRemaining()) {
-			client.getAsyncSocketChannel().write(bb.get(), bb, this);
-//			writerPool.submit(() -> client.getAsyncSocketChannel().write(bb.get(), bb, this));
+//			client.getAsyncSocketChannel().write(bb.get(), bb, this);
+			writerPool.submit(() -> client.getAsyncSocketChannel().write(bb.get(), bb, this));
 		} else {
 			client.fbb.unblock(bb);
-			lastWrite = System.nanoTime();
-			client.writing.set(false);
 			writerPool.submit(() -> {
 				canWrite.set(true);
 				client.checkWrite();
@@ -81,7 +78,6 @@ public abstract class AbstractAsyncByteBufWriteHandler implements CompletionHand
 	public boolean write(PositionedByteBuf bb) {
 		if (!canWrite.compareAndSet(true, false))
 			throw new WritePendingException();
-		client.writing.set(true);
 		writerPool.submit(() -> client.getAsyncSocketChannel().write(bb.get(), bb, this));
 		return true;
 	}

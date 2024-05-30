@@ -1,15 +1,20 @@
 package de.ancash.sockets.packet;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import de.ancash.misc.ReflectionUtils;
 import de.ancash.misc.io.SerializationUtils;
 
 public class Packet implements PacketInterface, Serializable, Cloneable {
-
+	
 	private static final long serialVersionUID = 962998206232520827L;
 
 	public static final short PING_PONG = 32723;
@@ -143,18 +148,21 @@ public class Packet implements PacketInterface, Serializable, Cloneable {
 		if (size > 15) {
 			temp = new byte[buffer.remaining()];
 			buffer.get(temp);
-			try {
-				obj = SerializationUtils.deserializeWithClassLoaders(temp);
-			} catch (ClassNotFoundException | IOException e) {
-				throw new IOException(e);
-			}
+							try {
+								obj = SerializationUtils.deserializeWithClassLoaders(temp);
+							} catch (ClassNotFoundException | IOException e) {
+								throw new IllegalStateException(e);
+
+							}
+//			obj = SerializationUtils.deserializeFST(temp);
 		}
 	}
 
+	@SuppressWarnings("nls")
 	@Override
 	public ByteBuffer toBytes() {
-		byte[] bytes;
 		byte[] serializedBytes = null;
+		boolean deserialize = false;
 		if (obj == null) {
 			serializedBytes = new byte[0];
 		} else {
@@ -163,32 +171,43 @@ public class Packet implements PacketInterface, Serializable, Cloneable {
 			} catch (IOException e) {
 				throw new IllegalStateException(e);
 			}
+//			serializedBytes = SerializationUtils.serializeFST(obj);
 		}
+		byte flags = 0;
+		if (!isClientTarget)
+			flags = setBit(flags, 0);
+		if (deserialize)
+			flags = setBit(flags, 1);
+
 		// length = size + header + isClientTarget + timeStamp + serializable
 		int length = 4 + 2 + 1 + 8 + serializedBytes.length;
-		bytes = new byte[length];
-		bytes[0] = (byte) (length >>> 24);
-		bytes[1] = (byte) (length >>> 16);
-		bytes[2] = (byte) (length >>> 8);
-		bytes[3] = (byte) (length);
-		bytes[4] = HEADER_BYTES[0];
-		bytes[5] = HEADER_BYTES[1];
-		bytes[6] = (byte) (longValue >>> 56);
-		bytes[7] = (byte) (longValue >>> 48);
-		bytes[8] = (byte) (longValue >>> 40);
-		bytes[9] = (byte) (longValue >>> 32);
-		bytes[10] = (byte) (longValue >>> 24);
-		bytes[11] = (byte) (longValue >>> 16);
-		bytes[12] = (byte) (longValue >>> 8);
-		bytes[13] = (byte) (longValue);
-		bytes[14] = (byte) (isClientTarget ? 0 : 1);
-		System.arraycopy(serializedBytes, 0, bytes, 15, serializedBytes.length);
-		ByteBuffer bb = ByteBuffer.allocate(bytes.length);
-		bb.put(bytes);
-		bb.position(0);
-		bb.limit(bytes.length);
-		bb.mark();
-		return bb;
+		ByteBuffer finalBB = ByteBuffer.allocateDirect(length);
+		finalBB.put((byte) (length >>> 24));
+		finalBB.put((byte) (length >>> 16));
+		finalBB.put((byte) (length >>> 8));
+		finalBB.put((byte) length);
+		finalBB.put(HEADER_BYTES[0]);
+		finalBB.put(HEADER_BYTES[1]);
+		finalBB.put((byte) (longValue >>> 56));
+		finalBB.put((byte) (longValue >>> 48));
+		finalBB.put((byte) (longValue >>> 40));
+		finalBB.put((byte) (longValue >>> 32));
+		finalBB.put((byte) (longValue >>> 24));
+		finalBB.put((byte) (longValue >>> 16));
+		finalBB.put((byte) (longValue >>> 8));
+		finalBB.put((byte) (longValue));
+		finalBB.put(flags);
+		finalBB.put(serializedBytes);
+		finalBB.position(0);
+		return finalBB;
+	}
+
+	public static byte setBit(byte b, int pos) {
+		return b |= 1 << pos;
+	}
+
+	public static byte unsetBit(byte b, int pos) {
+		return b &= ~(1 << pos);
 	}
 
 	public void resetResponse() {

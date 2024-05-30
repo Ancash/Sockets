@@ -40,7 +40,7 @@ public class AsyncPacketClient extends AbstractAsyncClient implements Listener {
 			return t;
 		}
 	});
-	private static final ArrayBlockingQueue<Duplet<AsyncPacketClient, UnfinishedPacket>> unfinishedPacketsQueue = new ArrayBlockingQueue<>(5000);
+	private static final ArrayBlockingQueue<Duplet<AsyncPacketClient, UnfinishedPacket>> unfinishedPacketsQueue = new ArrayBlockingQueue<>(1000);
 
 	static {
 		for (int i = 0; i < Runtime.getRuntime().availableProcessors(); i++)

@@ -113,11 +113,8 @@ public class FixedByteBuffer {
 
 	@SuppressWarnings("nls")
 	private void put0(ByteBuffer source) {
-		int cnt = 0;
-		while (!canWrite()) {
-			Sockets.sleepMillis(1);
-			if (cnt++ % 5 == 0 && r != null)
-				r.run();
+			while (!canWrite()) {
+			Sockets.sleepMillis(5);
 		}
 
 		try {

@@ -34,8 +34,6 @@ public abstract class AbstractAsyncClient extends FactoryHandler {
 	protected AtomicLong pos = new AtomicLong();
 	protected long stamp = System.currentTimeMillis();
 	protected final FixedByteBuffer fbb;
-	public final AtomicBoolean reading = new AtomicBoolean();
-	public final AtomicBoolean writing = new AtomicBoolean();
 
 	@SuppressWarnings("nls")
 	public AbstractAsyncClient(AsynchronousSocketChannel asyncSocket, int readBufSize, int writeBufSize) throws IOException {
@@ -44,7 +42,7 @@ public abstract class AbstractAsyncClient extends FactoryHandler {
 		this.readBufSize = readBufSize;
 		this.writeBufSize = writeBufSize;
 		this.asyncSocket = asyncSocket;
-		this.fbb = new FixedByteBuffer(writeBufSize, 64);
+		this.fbb = new FixedByteBuffer(writeBufSize, 128);
 		fbb.r = () -> checkWrite();
 		asyncSocket.setOption(StandardSocketOptions.SO_RCVBUF, readBufSize);
 		asyncSocket.setOption(StandardSocketOptions.SO_SNDBUF, writeBufSize);
@@ -87,7 +85,6 @@ public abstract class AbstractAsyncClient extends FactoryHandler {
 			System.err.println("could not get local/remote socket address");
 		}
 
-		reading.set(true);
 		PositionedByteBuf pbb = readHandler.fbb.getAvailableBuffer();
 		asyncSocket.read(pbb.get(), timeout, timeoutunit, pbb, readHandler);
 	}

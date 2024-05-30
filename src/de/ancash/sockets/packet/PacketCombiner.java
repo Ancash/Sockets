@@ -121,7 +121,7 @@ public class PacketCombiner {
 			pos += willAdd;
 
 			if (arrPos == size) {
-				UnfinishedPacket up = new UnfinishedPacket().setHeader(SerializationUtil.bytesToShort(new byte[] { buffer.get(4), buffer.get(5) }));
+				UnfinishedPacket up = new UnfinishedPacket(SerializationUtil.bytesToShort(new byte[] { buffer.get(4), buffer.get(5) }));
 				buffer.position(0);
 				up.buffer = buffer;
 				buffer = null;

@@ -61,12 +61,12 @@ public class Sockets {
 		AsyncPacketServer aps = new AsyncPacketServer("localhost", 54321, 1);
 		aps.start();
 		Thread.sleep(1000);
-		for (int i = 0; i < 5; i++) {
+		for (int i = 0; i < 10; i++) {
 			int o = i;
 			new Thread(() -> {
 				try {
 					Thread.currentThread().setName("cl - " + o);
-					AsyncPacketClient cl = new AsyncPacketClientFactory().newInstance("localhost", 54321, 1024 * 8, 1024 * 8);
+					AsyncPacketClient cl = new AsyncPacketClientFactory().newInstance("localhost", 54321, 1024 * 1, 1024 * 1);
 					Thread.sleep(1000);
 					testLatency0(cl);
 				} catch (Exception e) {
@@ -111,12 +111,12 @@ public class Sockets {
 		AsyncPacketServer aps = new AsyncPacketServer("ryzen2400g", 54321, 1);
 		aps.start();
 		Thread.sleep(1000);
-		for (int i = 0; i < 1; i++) {
+		for (int i = 0; i < 4; i++) {
 			int o = i;
 			new Thread(() -> {
 				try {
 					Thread.currentThread().setName("cl - " + o);
-					AsyncPacketClient cl = new AsyncPacketClientFactory().newInstance("ryzen2400g", 54321, 1024 * 32, 1024 * 32);
+					AsyncPacketClient cl = new AsyncPacketClientFactory().newInstance("ryzen2400g", 54321, 1024 * 16, 1024 * 16);
 					while (!cl.isConnected())
 						Thread.sleep(1);
 					testThroughput0(cl);
@@ -136,12 +136,11 @@ public class Sockets {
 			AtomicLong sent = new AtomicLong();
 
 			Packet packet = new Packet(Packet.PING_PONG);
-			int pl = 1024 * 16;
+			int pl = 1024 * 31;
 			packet.setObject(new byte[pl]);
 			int size = packet.toBytes().remaining();
 			int f = 10000;
 			byte[] bb = new byte[pl];
-			ByteBuffer test = null;
 			for (int i = 0; i < f; i++) {
 				packet = new Packet(Packet.PING_PONG);
 				packet.isClientTarget(false);
@@ -156,10 +155,6 @@ public class Sockets {
 //						System.out.println(cnt.get());
 					}
 				});
-//				if (test == null)
-//					test = packet.toBytes();
-//				cl.putWrite(test);
-//				test.reset();
 				cl.write(packet);
 				sent.incrementAndGet();
 			}
@@ -190,11 +185,10 @@ public class Sockets {
 	@SuppressWarnings("nls")
 	public static void main(String... args) throws InterruptedException, NumberFormatException, UnknownHostException, IOException {
 		System.out.println("Starting Sockets...");
-//		Thread.sleep(10000);
 //		testThroughput();
-//		testLatency();
-//		if (true)
-//			return;
+		testLatency();
+		if (true)
+			return;
 		PluginOutputFormatter pof = new PluginOutputFormatter(
 				"[" + IFormatter.PART_DATE_TIME + "] " + "[" + IFormatter.THREAD_NAME + "/" + IFormatter.COLOR + IFormatter.LEVEL + IFormatter.RESET
 						+ "] [" + PluginOutputFormatter.PLUGIN_NAME + "] " + IFormatter.COLOR + IFormatter.MESSAGE + IFormatter.RESET,

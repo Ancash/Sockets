@@ -50,7 +50,6 @@ public class ByteBufferDistributor {
 
 	public void unblockBuffer(PositionedByteBuf bb) {
 		if (locked[bb.getAId()].get()) {
-			bb.owner = null;
 			blockCnt.decrementAndGet();
 			bb.get().position(0);
 			bb.get().limit(bb.get().capacity());
@@ -66,8 +65,6 @@ public class ByteBufferDistributor {
 		try {
 			while (!readLock.compareAndSet(false, true))
 				Sockets.sleepMillis(1);
-			if (!isBufferAvailable())
-				return null;
 			PositionedByteBuf pbb = getAvailableBuffer0();
 			return pbb;
 		} finally {

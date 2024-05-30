@@ -11,6 +11,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import de.ancash.Sockets;
+import de.ancash.datastructures.tuples.Duplet;
+import de.ancash.datastructures.tuples.Tuple;
 import de.ancash.sockets.async.ByteEventHandler;
 import de.ancash.sockets.io.ByteBufferDistributor;
 import de.ancash.sockets.io.PositionedByteBuf;
@@ -21,7 +23,7 @@ public abstract class AbstractAsyncReadHandler implements CompletionHandler<Inte
 	static final ConcurrentHashMap<Integer, LinkedBlockingQueue<PositionedByteBuf>> bufs = new ConcurrentHashMap<>();
 	static final ConcurrentHashMap<Integer, AtomicBoolean> blocked = new ConcurrentHashMap<Integer, AtomicBoolean>();
 	static final LinkedBlockingQueue<Integer> toProcess = new LinkedBlockingQueue<>();
-	static final ExecutorService byteHandlerPool = Executors.newFixedThreadPool(2, new ThreadFactory() {
+	static final ExecutorService byteHandlerPool = Executors.newFixedThreadPool(1, new ThreadFactory() {
 		int i = 0;
 
 		@SuppressWarnings("nls")
@@ -39,9 +41,33 @@ public abstract class AbstractAsyncReadHandler implements CompletionHandler<Inte
 			return t;
 		}
 	});
-
-//	static final Object wait = new Object();
-
+	
+	private static final LinkedBlockingQueue<Duplet<AbstractAsyncReadHandler, Long>> delayed = new LinkedBlockingQueue<>();
+	
+	static final Thread delayedInitRead = new Thread(() -> {
+		int wait = 5;
+		while (!Thread.interrupted()) {  
+			long now = System.currentTimeMillis();
+			
+			while(true) {
+				Duplet<AbstractAsyncReadHandler, Long> d = delayed.peek();
+				if(d == null)
+					break;
+				if(d.getSecond() + wait < now) {
+					delayed.remove();
+					d.getFirst().tryInitRead();
+				} else
+					break;
+			}
+			try {
+				Thread.sleep(Math.max(Math.min(wait, System.currentTimeMillis() - now), 1));
+			} catch (InterruptedException e) {
+				return;
+			}
+		}
+		
+	}, "DelayedReadInit");
+	
 	static {
 		for (int i = 0; i < 2; i++) {
 			byteHandlerPool.submit(() -> {
@@ -58,7 +84,6 @@ public abstract class AbstractAsyncReadHandler implements CompletionHandler<Inte
 						int cnt = 0;
 						while (!queue.isEmpty() && cnt++ < 100) {
 							PositionedByteBuf pbb = queue.poll();
-							pbb.owner = Thread.currentThread();
 							if (client.readHandler.byteHandler != null)
 								client.readHandler.byteHandler.onBytes(pbb.get());
 							else
@@ -69,16 +94,17 @@ public abstract class AbstractAsyncReadHandler implements CompletionHandler<Inte
 							toProcess.add(next);
 						blocked.get(next).set(false);
 					}
-				} catch (Throwable th) {
-					th.printStackTrace();
+				} catch (InterruptedException th) {
+					return;
 				}
 			});
 		}
+		delayedInitRead.start();
 	}
 
 	static void queueBuf(AbstractAsyncClient client, PositionedByteBuf pbb) throws InterruptedException {
 		clients.computeIfAbsent(client.instance, k -> client);
-		bufs.computeIfAbsent(client.instance, k -> new LinkedBlockingQueue<>(1000)).put(pbb);
+		bufs.computeIfAbsent(client.instance, k -> new LinkedBlockingQueue<>(100)).put(pbb);
 		if (!toProcess.contains(client.instance))
 			toProcess.add(client.instance);
 	}
@@ -100,7 +126,6 @@ public abstract class AbstractAsyncReadHandler implements CompletionHandler<Inte
 			failed(new ClosedChannelException(), buf);
 			return;
 		}
-		client.reading.set(false);
 		buf.get().flip();
 		try {
 			queueBuf(client, buf);
@@ -108,22 +133,25 @@ public abstract class AbstractAsyncReadHandler implements CompletionHandler<Inte
 			failed(e, buf);
 			return;
 		}
-		if (client.delayNextRead()) {
-			new Thread(() -> {
-				Sockets.sleepMillis(1);
-				initRead();
-			}).start();
-			return;
-		} else
+//		if (client.delayNextRead()) {
+//			new Thread(() -> {
+//				Sockets.sleepMillis(1);
+//				initRead();
+//			}).start();
+//			return;
+//		} else
+			tryInitRead();
+	}
+	
+	private void tryInitRead() {
+		if(!fbb.isBufferAvailable()) {
+			delayed.add(Tuple.of(this, System.currentTimeMillis()));
+		}  else
 			initRead();
 	}
 
 	private void initRead() {
-		while (!fbb.isBufferAvailable()) {
-			Sockets.sleepMillis(1);
-		}
 		PositionedByteBuf buf = fbb.getAvailableBuffer();
-		client.reading.set(true);
 		client.getAsyncSocketChannel().read(buf.get(), client.timeout, client.timeoutunit, buf, this);
 	}
 

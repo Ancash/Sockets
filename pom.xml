@@ -1,8 +1,10 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.ancash</groupId>
 	<artifactId>sockets</artifactId>
-	<version>0.0.9</version>
+	<version>0.0.10</version>
 	<build>
 		<sourceDirectory>src</sourceDirectory>
 		<resources>
@@ -37,7 +39,8 @@
 				</configuration>
 				<executions>
 					<execution>
-						<id>make-assembly</id> <!-- this is used for inheritance merges -->
+						<id>make-assembly</id> <!-- this is used for inheritance
+						merges -->
 						<phase>package</phase> <!-- bind to the packaging phase -->
 						<goals>
 							<goal>single</goal>
@@ -51,6 +54,10 @@
 		<repository>
 			<id>jitpack.io</id>
 			<url>https://jitpack.io</url>
+		</repository>
+		<repository>
+			<id>raspi</id>
+			<url>http://denzo.algoholics.eu:25565/releases</url>
 		</repository>
 	</repositories>
 	<dependencies>
@@ -72,7 +79,7 @@
 		<dependency>
 			<groupId>de.ancash</groupId>
 			<artifactId>loki</artifactId>
-			<version>0.0.5</version>
+			<version>0.0.7</version>
 		</dependency>
 		<dependency>
 			<groupId>de.ancash</groupId>
@@ -82,9 +89,8 @@
 	</dependencies>
 	<distributionManagement>
 		<repository>
-			<id>github</id>
-			<name>GitHub Ancash Apache Maven Packages</name>
-			<url>https://maven.pkg.github.com/Ancash/Sockets</url>
+			<id>raspi</id>
+			<url>http://denzo.algoholics.eu:25565/releases</url>
 		</repository>
 	</distributionManagement>
 </project>
