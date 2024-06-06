@@ -15,7 +15,8 @@ public class AsyncForwardConnectionFactory extends AbstractAsyncClientFactory<As
 	}
 
 	@Override
-	public AsyncForwardConnection newInstance(String address, int port, int readBufSize, int writeBufSize, int threads) throws IOException {
-		throw new UnsupportedOperationException();
+	public AsyncForwardConnection newInstance(String address, int port, int readBufSize, int writeBufSize) throws IOException {
+				throw new UnsupportedOperationException();
+
 	}
 }

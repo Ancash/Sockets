@@ -5,9 +5,6 @@ import java.nio.channels.AsynchronousSocketChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import de.ancash.sockets.async.impl.packet.client.AsyncPacketClientReadHandlerFactory;
-import de.ancash.sockets.async.impl.packet.client.AsyncPacketClientWriteHandlerFactory;
-import de.ancash.sockets.async.impl.packet.server.AsyncPacketServerAcceptHandlerFactory;
 import de.ancash.sockets.async.server.AbstractAsyncServer;
 
 public class AsyncForwardServer extends AbstractAsyncServer {
@@ -18,9 +15,9 @@ public class AsyncForwardServer extends AbstractAsyncServer {
 
 	public AsyncForwardServer(String address, int port, String[] targets) {
 		super(address, port);
-		setAsyncAcceptHandlerFactory(new AsyncPacketServerAcceptHandlerFactory());
-		setAsyncReadHandlerFactory(new AsyncPacketClientReadHandlerFactory());
-		setAsyncWriteHandlerFactory(new AsyncPacketClientWriteHandlerFactory());
+//		setAsyncAcceptHandlerFactory(new AsyncPacketServerAcceptHandlerFactory());
+//		setAsyncReadHandlerFactory(new AsyncPacketClientReadHandlerFactory());
+//		setAsyncWriteHandlerFactory(new AsyncPacketClientWriteHandlerFactory());
 		setAsyncClientFactory(new AsyncForwardConnectionFactory());
 		serverList = new ServerDescription[targets.length];
 		for (int i = 0; i < targets.length; i++)

@@ -19,6 +19,7 @@ import de.ancash.libs.org.bukkit.event.EventHandler;
 import de.ancash.libs.org.bukkit.event.EventManager;
 import de.ancash.libs.org.bukkit.event.Listener;
 import de.ancash.sockets.async.client.AbstractAsyncClient;
+import de.ancash.sockets.async.client.AbstractAsyncReadHandler;
 import de.ancash.sockets.events.ClientConnectEvent;
 import de.ancash.sockets.events.ClientDisconnectEvent;
 import de.ancash.sockets.events.ClientPacketReceiveEvent;
@@ -114,6 +115,8 @@ public class AsyncPacketClient extends AbstractAsyncClient implements Listener {
 
 	@Override
 	public synchronized void onDisconnect(Throwable th) {
+
+		AbstractAsyncReadHandler.clear(instance);
 		try {
 			getAsyncSocketChannel().close();
 		} catch (IOException e) {

@@ -47,11 +47,11 @@ public class AsyncForwardConnection extends AbstractAsyncClient {
 	}
 
 	public void writeToPartner(byte[] bytes) {
-		partner.putWrite(bytes);
+//		partner.putWrite(bytes);
 	}
 
 	public void writeToPartner(ByteBuffer bb) {
-		partner.putWrite(bb);
+//		partner.putWrite(bb);
 	}
 
 	private static synchronized AsynchronousSocketChannel createAsyncSocket(AsyncForwardConnection c) throws IOException {
@@ -118,7 +118,6 @@ public class AsyncForwardConnection extends AbstractAsyncClient {
 
 	}
 
-	@Override
 	public void onBytesReceive(byte[] bytes) {
 		writeToPartner(bytes);
 	}
@@ -126,5 +125,17 @@ public class AsyncForwardConnection extends AbstractAsyncClient {
 	@Override
 	public boolean isConnectionValid() {
 		return isConnected() && partner.isConnected();
+	}
+
+	@Override
+	public boolean delayNextRead() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public void onBytesReceive(ByteBuffer bytes) {
+		// TODO Auto-generated method stub
+		
 	}
 }

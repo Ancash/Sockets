@@ -102,6 +102,11 @@ public abstract class AbstractAsyncReadHandler implements CompletionHandler<Inte
 		delayedInitRead.start();
 	}
 
+	public static void clear(int i) {
+		clients.remove(i);
+		bufs.remove(i);
+	}
+	
 	static void queueBuf(AbstractAsyncClient client, PositionedByteBuf pbb) throws InterruptedException {
 		clients.computeIfAbsent(client.instance, k -> client);
 		bufs.computeIfAbsent(client.instance, k -> new LinkedBlockingQueue<>(100)).put(pbb);
@@ -151,12 +156,17 @@ public abstract class AbstractAsyncReadHandler implements CompletionHandler<Inte
 	}
 
 	private void initRead() {
-		PositionedByteBuf buf = fbb.getAvailableBuffer();
-		client.getAsyncSocketChannel().read(buf.get(), client.timeout, client.timeoutunit, buf, this);
+		try {
+			PositionedByteBuf buf = fbb.getAvailableBuffer();
+			client.getAsyncSocketChannel().read(buf.get(), client.timeout, client.timeoutunit, buf, this);
+		} catch (Exception e) {
+			failed(e, null);
+		}
 	}
 
 	@Override
 	public void failed(Throwable arg0, PositionedByteBuf arg1) {
+		clear(client.instance);
 		client.setConnected(false);
 		client.onDisconnect(arg0);
 	}

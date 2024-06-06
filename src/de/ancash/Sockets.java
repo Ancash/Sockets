@@ -186,9 +186,9 @@ public class Sockets {
 	public static void main(String... args) throws InterruptedException, NumberFormatException, UnknownHostException, IOException {
 		System.out.println("Starting Sockets...");
 //		testThroughput();
-		testLatency();
-		if (true)
-			return;
+//		testLatency();
+//		if (true)
+//			return;
 		PluginOutputFormatter pof = new PluginOutputFormatter(
 				"[" + IFormatter.PART_DATE_TIME + "] " + "[" + IFormatter.THREAD_NAME + "/" + IFormatter.COLOR + IFormatter.LEVEL + IFormatter.RESET
 						+ "] [" + PluginOutputFormatter.PLUGIN_NAME + "] " + IFormatter.COLOR + IFormatter.MESSAGE + IFormatter.RESET,

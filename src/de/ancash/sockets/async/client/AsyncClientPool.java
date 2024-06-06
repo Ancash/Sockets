@@ -45,25 +45,26 @@ public class AsyncClientPool<S extends AbstractAsyncClient, T extends AbstractAs
 	}
 
 	public boolean newConnection() {
-		try {
-			S newCon = factory.newInstance(address, port, readBufSize, writeBufSize, threadsPerCon);
-			int i = 0;
-			while (!newCon.isConnected()) {
-				Thread.sleep(1);
-				i++;
-				if (i >= 1000)
-					throw new IOException("Connection refused");
-			}
-
-			synchronized (clients) {
-				clients.add(newCon);
-				System.out.println("Established new connection to " + address + ":" + port + " (" + clients.size() + "/" + connections + ")");
-			}
-			return true;
-		} catch (IOException | InterruptedException e) {
-			System.err.println("Could not establish connection to " + address + ":" + port + " (" + e + ")");
-			return false;
-		}
+//		try {
+//			S newCon = factory.newInstance(address, port, readBufSize, writeBufSize, threadsPerCon);
+//			int i = 0;
+//			while (!newCon.isConnected()) {
+//				Thread.sleep(1);
+//				i++;
+//				if (i >= 1000)
+//					throw new IOException("Connection refused");
+//			}
+//
+//			synchronized (clients) {
+//				clients.add(newCon);
+//				System.out.println("Established new connection to " + address + ":" + port + " (" + clients.size() + "/" + connections + ")");
+//			}
+//			return true;
+//		} catch (IOException | InterruptedException e) {
+//			System.err.println("Could not establish connection to " + address + ":" + port + " (" + e + ")");
+//			return false;
+//		}
+		return false;
 	}
 
 	public boolean write(byte[] b) {
@@ -74,7 +75,7 @@ public class AsyncClientPool<S extends AbstractAsyncClient, T extends AbstractAs
 		if (!enabled)
 			return false;
 		synchronized (clients) {
-			clients.stream().sorted((a, b) -> Integer.compare(a.getWritingQueueSize(), b.getWritingQueueSize())).findFirst().get().putWrite(bb);
+//			clients.stream().sorted((a, b) -> Integer.compare(a.getWritingQueueSize(), b.getWritingQueueSize())).findFirst().get().putWrite(bb);
 		}
 		return true;
 	}
@@ -83,9 +84,9 @@ public class AsyncClientPool<S extends AbstractAsyncClient, T extends AbstractAs
 		if (!enabled)
 			return false;
 		synchronized (clients) {
-			AbstractAsyncClient client = clients.stream().sorted((a, b) -> Integer.compare(a.getWritingQueueSize(), b.getWritingQueueSize()))
-					.findFirst().get();
-			client.putWrite(packet.toBytes());
+//			AbstractAsyncClient client = clients.stream().sorted((a, b) -> Integer.compare(a.getWritingQueueSize(), b.getWritingQueueSize()))
+//					.findFirst().get();
+//			client.putWrite(packet.toBytes());
 			return true;
 		}
 	}
