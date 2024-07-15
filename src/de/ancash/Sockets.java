@@ -108,10 +108,10 @@ public class Sockets {
 	}
 
 	static void testThroughput() throws IOException, InterruptedException {
-		AsyncPacketServer aps = new AsyncPacketServer("ryzen2400g", 54321, 1);
+		AsyncPacketServer aps = new AsyncPacketServer("ryzen2400g", 54321, 2);
 		aps.start();
 		Thread.sleep(1000);
-		for (int i = 0; i < 4; i++) {
+		for (int i = 0; i < 1; i++) {
 			int o = i;
 			new Thread(() -> {
 				try {
@@ -131,12 +131,11 @@ public class Sockets {
 	static AtomicLong cnt = new AtomicLong();
 
 	static void testThroughput0(AsyncPacketClient cl) throws InterruptedException {
-
 		while (true) {
 			AtomicLong sent = new AtomicLong();
 
 			Packet packet = new Packet(Packet.PING_PONG);
-			int pl = 1024 * 31;
+			int pl = 1024 * 15;
 			packet.setObject(new byte[pl]);
 			int size = packet.toBytes().remaining();
 			int f = 10000;
@@ -152,7 +151,6 @@ public class Sockets {
 						sent.decrementAndGet();
 						if (cnt.incrementAndGet() % 10000 == 0)
 							System.out.println(((cnt.get() * size * 2) / 1024D) / ((System.currentTimeMillis() - now + 1D) / 1000D) + " kbytes/s");
-//						System.out.println(cnt.get());
 					}
 				});
 				cl.write(packet);
@@ -185,6 +183,7 @@ public class Sockets {
 	@SuppressWarnings("nls")
 	public static void main(String... args) throws InterruptedException, NumberFormatException, UnknownHostException, IOException {
 		System.out.println("Starting Sockets...");
+		SerializationUtils.addClazzLoader(Sockets.class.getClassLoader());
 //		testThroughput();
 //		testLatency();
 //		if (true)

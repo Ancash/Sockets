@@ -20,14 +20,14 @@ import de.ancash.sockets.packet.UnfinishedPacket;
 
 public class AsyncPacketServer extends AbstractAsyncServer {
 
-	private final LinkedBlockingQueue<Duplet<UnfinishedPacket, AsyncPacketServerClient>> unfishedPackets = new LinkedBlockingQueue<>(5000);
+	private final LinkedBlockingQueue<Duplet<UnfinishedPacket, AsyncPacketServerClient>> unfishedPackets = new LinkedBlockingQueue<>(10_000);
 	private final ExecutorService workerPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 	private final Set<AsyncPacketServerClient> clients = new HashSet<>();
 
 	public AsyncPacketServer(String address, int port, int packetWorker) {
 		super(address, port);
-		setReadBufSize(1024 * 64);
-		setWriteBufSize(1024 * 64);
+		setReadBufSize(1024 * 32);
+		setWriteBufSize(1024 * 32);
 		setAsyncAcceptHandlerFactory(new AsyncPacketServerAcceptHandlerFactory());
 		setAsyncReadHandlerFactory(new AsyncPacketServerReadHandlerFactory(this));
 		setAsyncWriteHandlerFactory(new AsyncPacketClientWriteHandlerFactory());

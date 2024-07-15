@@ -10,11 +10,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import de.ancash.misc.ConversionUtil;
 import de.ancash.misc.ReflectionUtils;
 import de.ancash.misc.io.SerializationUtils;
 
 public class Packet implements PacketInterface, Serializable, Cloneable {
-	
+
 	private static final long serialVersionUID = 962998206232520827L;
 
 	public static final short PING_PONG = 32723;
@@ -148,12 +149,12 @@ public class Packet implements PacketInterface, Serializable, Cloneable {
 		if (size > 15) {
 			temp = new byte[buffer.remaining()];
 			buffer.get(temp);
-							try {
-								obj = SerializationUtils.deserializeWithClassLoaders(temp);
-							} catch (ClassNotFoundException | IOException e) {
-								throw new IllegalStateException(e);
+			try {
+				obj = SerializationUtils.deserializeWithClassLoaders(temp);
+			} catch (ClassNotFoundException | IOException e) {
+				throw new IllegalStateException(e);
 
-							}
+			}
 //			obj = SerializationUtils.deserializeFST(temp);
 		}
 	}

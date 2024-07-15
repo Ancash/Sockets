@@ -41,7 +41,7 @@ public class AsyncPacketClient extends AbstractAsyncClient implements Listener {
 			return t;
 		}
 	});
-	private static final ArrayBlockingQueue<Duplet<AsyncPacketClient, UnfinishedPacket>> unfinishedPacketsQueue = new ArrayBlockingQueue<>(1000);
+	private static final ArrayBlockingQueue<Duplet<AsyncPacketClient, UnfinishedPacket>> unfinishedPacketsQueue = new ArrayBlockingQueue<>(10_000);
 
 	static {
 		for (int i = 0; i < Runtime.getRuntime().availableProcessors(); i++)
@@ -115,8 +115,6 @@ public class AsyncPacketClient extends AbstractAsyncClient implements Listener {
 
 	@Override
 	public synchronized void onDisconnect(Throwable th) {
-
-		AbstractAsyncReadHandler.clear(instance);
 		try {
 			getAsyncSocketChannel().close();
 		} catch (IOException e) {

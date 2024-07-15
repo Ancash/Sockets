@@ -42,7 +42,7 @@ public abstract class AbstractAsyncClient extends FactoryHandler {
 		this.readBufSize = readBufSize;
 		this.writeBufSize = writeBufSize;
 		this.asyncSocket = asyncSocket;
-		this.fbb = new FixedByteBuffer(writeBufSize, 128);
+		this.fbb = new FixedByteBuffer(writeBufSize, 32);
 		fbb.r = () -> checkWrite();
 		asyncSocket.setOption(StandardSocketOptions.SO_RCVBUF, readBufSize);
 		asyncSocket.setOption(StandardSocketOptions.SO_SNDBUF, writeBufSize);

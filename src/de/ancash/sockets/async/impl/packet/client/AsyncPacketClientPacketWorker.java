@@ -34,7 +34,11 @@ public class AsyncPacketClientPacketWorker implements Runnable {
 					continue;
 				}
 				EventManager.callEvent(new ClientPacketReceiveEvent(unfinishedPacket.getFirst(), p));
-			} catch (InterruptedException e) {
+			} catch (Throwable e) {
+				if (!(e instanceof InterruptedException)) {
+					System.err.println("stopped " + Thread.currentThread().getName());
+					e.printStackTrace();
+				}
 				return;
 			}
 		}

@@ -66,7 +66,6 @@ public abstract class AbstractAsyncByteBufWriteHandler implements CompletionHand
 
 	@Override
 	public void failed(Throwable arg0, PositionedByteBuf arg1) {
-		arg0.printStackTrace();
 		client.setConnected(false);
 		client.onDisconnect(arg0);
 	}
