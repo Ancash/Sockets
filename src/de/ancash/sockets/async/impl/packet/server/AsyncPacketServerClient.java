@@ -7,6 +7,7 @@ import java.util.List;
 
 import de.ancash.sockets.async.client.AbstractAsyncClient;
 import de.ancash.sockets.async.server.AbstractAsyncServer;
+import de.ancash.sockets.io.DistributedByteBuffer;
 import de.ancash.sockets.packet.PacketCombiner;
 import de.ancash.sockets.packet.UnfinishedPacket;
 
@@ -17,8 +18,8 @@ public class AsyncPacketServerClient extends AbstractAsyncClient {
 
 	public AsyncPacketServerClient(AbstractAsyncServer asyncIOServer, AsynchronousSocketChannel asyncSocket, int readBufSize, int writeBufSize)
 			throws IOException {
-		super(asyncSocket, readBufSize, writeBufSize);
-		packetCombiner = new PacketCombiner(1024 * 1024 * 8);
+		super(asyncSocket, readBufSize, writeBufSize, false);
+		packetCombiner = new PacketCombiner(1024 * 1024, 16);
 		this.server = (AsyncPacketServer) asyncIOServer;
 		setAsyncWriteHandlerFactory(asyncIOServer.getAsyncWriteHandlerFactory());
 		setAsyncReadHandlerFactory(asyncIOServer.getAsyncReadHandlerFactory());
@@ -28,6 +29,10 @@ public class AsyncPacketServerClient extends AbstractAsyncClient {
 
 	public int getMaxPacketSize() {
 		return packetCombiner.getMaxSize();
+	}
+	
+	public void freeReadBuffer(DistributedByteBuffer dbb) {
+		packetCombiner.freeBuffer(dbb);
 	}
 
 	@Override
@@ -64,10 +69,5 @@ public class AsyncPacketServerClient extends AbstractAsyncClient {
 	@Override
 	public void onDisconnect(Throwable th) {
 		server.onDisconnect(this, th);
-	}
-
-	@Override
-	public boolean delayNextRead() {
-		return server.delayNextRead();
 	}
 }

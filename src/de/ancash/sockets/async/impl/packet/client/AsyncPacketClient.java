@@ -3,13 +3,17 @@ package de.ancash.sockets.async.impl.packet.client;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import de.ancash.Sockets;
@@ -19,10 +23,10 @@ import de.ancash.libs.org.bukkit.event.EventHandler;
 import de.ancash.libs.org.bukkit.event.EventManager;
 import de.ancash.libs.org.bukkit.event.Listener;
 import de.ancash.sockets.async.client.AbstractAsyncClient;
-import de.ancash.sockets.async.client.AbstractAsyncReadHandler;
 import de.ancash.sockets.events.ClientConnectEvent;
 import de.ancash.sockets.events.ClientDisconnectEvent;
 import de.ancash.sockets.events.ClientPacketReceiveEvent;
+import de.ancash.sockets.io.DistributedByteBuffer;
 import de.ancash.sockets.packet.Packet;
 import de.ancash.sockets.packet.PacketCallback;
 import de.ancash.sockets.packet.PacketCombiner;
@@ -30,21 +34,35 @@ import de.ancash.sockets.packet.UnfinishedPacket;
 
 public class AsyncPacketClient extends AbstractAsyncClient implements Listener {
 
-	private static final ExecutorService workerPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(), new ThreadFactory() {
+	private static final Set<Long> workers = new HashSet<Long>();
+	private static final ExecutorService workerPool = Executors.newFixedThreadPool(Math.max(Runtime.getRuntime().availableProcessors() / 8, 1),
+			new ThreadFactory() {
 
-		AtomicInteger cnt = new AtomicInteger();
+				AtomicInteger cnt = new AtomicInteger();
 
-		@SuppressWarnings("nls")
-		@Override
-		public Thread newThread(Runnable r) {
-			Thread t = new Thread(r, "ClientPacketWorker-" + cnt.getAndIncrement());
-			return t;
-		}
-	});
-	private static final ArrayBlockingQueue<Duplet<AsyncPacketClient, UnfinishedPacket>> unfinishedPacketsQueue = new ArrayBlockingQueue<>(10_000);
+				@Override
+				public Thread newThread(Runnable r) {
+					
+					Thread t = new Thread(r, "ClientPacketWorker-" + cnt.getAndIncrement());
+					workers.add(t.getId());
+					return t;
+				}
+			});
+
+	private static final ExecutorService exec = Executors.newFixedThreadPool(Math.max(Runtime.getRuntime().availableProcessors() / 8, 1),
+			new ThreadFactory() {
+				AtomicInteger cnt = new AtomicInteger();
+
+				@Override
+				public Thread newThread(Runnable r) {
+					return new Thread(r, "PacketWriter-" + cnt.getAndIncrement());
+				}
+			});
+
+	private static final ArrayBlockingQueue<Duplet<AsyncPacketClient, UnfinishedPacket>> unfinishedPacketsQueue = new ArrayBlockingQueue<>(1_000);
 
 	static {
-		for (int i = 0; i < Runtime.getRuntime().availableProcessors(); i++)
+		for (int i = 0; i < Math.max(Runtime.getRuntime().availableProcessors() / 8, 1); i++)
 			workerPool.submit(new AsyncPacketClientPacketWorker(unfinishedPacketsQueue, i));
 	}
 
@@ -52,22 +70,28 @@ public class AsyncPacketClient extends AbstractAsyncClient implements Listener {
 	private final Map<Long, Packet> awaitResponses = new ConcurrentHashMap<>();
 	private final AtomicReference<Long> lock = new AtomicReference<>(null);
 	private final PacketCombiner packetCombiner;
-//	private ExecutorService clientThreadPool = Executors.newCachedThreadPool();
+	private final AtomicLong packetId = new AtomicLong();
 
 	public AsyncPacketClient(AsynchronousSocketChannel asyncSocket, int readBufSize, int writeBufSize) throws IOException {
-		super(asyncSocket, readBufSize, writeBufSize);
-		packetCombiner = new PacketCombiner(1024 * 1024 * 8);
+		super(asyncSocket, readBufSize, writeBufSize, true);
+		packetCombiner = new PacketCombiner(1024 * 1024, 16);
 		setAsyncClientFactory(new AsyncPacketClientFactory());
 		setAsyncReadHandlerFactory(new AsyncPacketClientReadHandlerFactory());
 		setAsyncWriteHandlerFactory(new AsyncPacketClientWriteHandlerFactory());
 		setAsyncConnectHandlerFactory(new AsyncPacketClientConnectHandlerFactory());
 		setHandlers();
+
+		EventManager.registerEvents(this, this);
+	}
+
+	public void freeReadBuffer(DistributedByteBuffer dbb) {
+		packetCombiner.freeBuffer(dbb);
 	}
 
 	@EventHandler
 	public void onPacket(ClientPacketReceiveEvent event) {
 		Packet packet = event.getPacket();
-		PacketCallback pc;
+		PacketCallback pc = null;
 		Packet awake;
 		pc = packetCallbacks.remove(packet.getTimeStamp());
 		awake = awaitResponses.remove(packet.getTimeStamp());
@@ -77,39 +101,37 @@ public class AsyncPacketClient extends AbstractAsyncClient implements Listener {
 			awake.awake(packet);
 	}
 
-	public final void write(Packet packet) throws InterruptedException {
-		try {
-			while (!lock.compareAndSet(null, Thread.currentThread().getId())
-					&& !lock.compareAndSet(Thread.currentThread().getId(), Thread.currentThread().getId()))
-				Sockets.sleepMillis(1);
-			packet.addTimeStamp();
-			while (packetCallbacks.containsKey(packet.getTimeStamp()) || awaitResponses.containsKey(packet.getTimeStamp()))
-				packet.addTimeStamp();
-			if (packet.hasPacketCallback()) {
-				packetCallbacks.put(packet.getTimeStamp(), packet.getPacketCallback());
+	public final void write(Packet packet) {
+		int i = 1;
+		while (packetCallbacks.size() + awaitResponses.size() > 70 && (packet.hasPacketCallback() || packet.isAwaitingRespose())) {
+			Sockets.sleepMillis(1);
+			if (i++ % 10 == 0 && workers.contains(Thread.currentThread().getId())) {
+				exec.submit(() -> write(packet));
+				return;
 			}
-			if (packet.isAwaitingRespose())
-				awaitResponses.put(packet.getTimeStamp(), packet);
-		} finally {
-			lock.set(null);
 		}
-
+		packet.setLong(packetId.getAndIncrement());
+		if (packet.hasPacketCallback()) {
+			packetCallbacks.put(packet.getTimeStamp(), packet.getPacketCallback());
+		}
+		if (packet.isAwaitingRespose())
+			awaitResponses.put(packet.getTimeStamp(), packet);
 		putWrite(packet.toBytes());
 	}
 
 	@Override
 	public void onBytesReceive(ByteBuffer b) {
-		for (UnfinishedPacket packet : packetCombiner.put(b))
+		for (UnfinishedPacket packet : packetCombiner.put(b)) {
 			try {
 				unfinishedPacketsQueue.put(Tuple.of(this, packet));
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
+		}
 	}
 
 	@Override
 	public void onConnect() {
-		EventManager.registerEvents(this, this);
 		EventManager.callEvent(new ClientConnectEvent(this));
 	}
 
@@ -125,20 +147,6 @@ public class AsyncPacketClient extends AbstractAsyncClient implements Listener {
 			while (!lock.compareAndSet(null, Thread.currentThread().getId())
 					&& !lock.compareAndSet(Thread.currentThread().getId(), Thread.currentThread().getId()))
 				Sockets.sleepMillis(1);
-			for (PacketCallback callback : packetCallbacks.values()) {
-				try {
-					callback.call(th);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-			for (Packet packet : awaitResponses.values()) {
-				try {
-					packet.awake(null);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
 			packetCallbacks.clear();
 			awaitResponses.clear();
 		} finally {
@@ -149,10 +157,5 @@ public class AsyncPacketClient extends AbstractAsyncClient implements Listener {
 	@Override
 	public boolean isConnectionValid() {
 		return isConnected();
-	}
-
-	@Override
-	public boolean delayNextRead() {
-		return false;
 	}
 }

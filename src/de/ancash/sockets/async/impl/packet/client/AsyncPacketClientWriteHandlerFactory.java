@@ -1,13 +1,13 @@
 package de.ancash.sockets.async.impl.packet.client;
 
-import de.ancash.sockets.async.client.AbstractAsyncByteBufWriteHandler;
+import de.ancash.sockets.async.client.IWriteHandler;
 import de.ancash.sockets.async.client.AbstractAsyncClient;
-import de.ancash.sockets.async.client.AbstractAsyncWriteHandlerFactory;
+import de.ancash.sockets.async.client.WriteHandlerFactory;
 
-public class AsyncPacketClientWriteHandlerFactory extends AbstractAsyncWriteHandlerFactory {
+public class AsyncPacketClientWriteHandlerFactory extends WriteHandlerFactory {
 
 	@Override
-	public AbstractAsyncByteBufWriteHandler newInstance(AbstractAsyncClient asyncClient) {
+	public IWriteHandler newInstance(AbstractAsyncClient asyncClient) {
 		return new AsyncPacketClientWriteHandler(asyncClient);
 	}
 }

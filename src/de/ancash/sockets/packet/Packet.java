@@ -1,16 +1,11 @@
 package de.ancash.sockets.packet;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Arrays;
 import java.util.Optional;
 
-import de.ancash.misc.ConversionUtil;
 import de.ancash.misc.ReflectionUtils;
 import de.ancash.misc.io.SerializationUtils;
 
@@ -145,43 +140,76 @@ public class Packet implements PacketInterface, Serializable, Cloneable {
 		this.header = SerializationUtil.bytesToShort(temp);
 		longValue = ((buffer.get() & 0xFFL) << 56) | ((buffer.get() & 0xFFL) << 48) | ((buffer.get() & 0xFFL) << 40) | ((buffer.get() & 0xFFL) << 32)
 				| ((buffer.get() & 0xFFL) << 24) | ((buffer.get() & 0xFFL) << 16) | ((buffer.get() & 0xFFL) << 8) | ((buffer.get() & 0xFFL));
-		isClientTarget = buffer.get() == 0;
+		byte flags = buffer.get();
+		isClientTarget = getBit(flags, 0) == 0;
 		if (size > 15) {
 			temp = new byte[buffer.remaining()];
 			buffer.get(temp);
-			try {
-				obj = SerializationUtils.deserializeWithClassLoaders(temp);
-			} catch (ClassNotFoundException | IOException e) {
-				throw new IllegalStateException(e);
+			if (getBit(flags, 1) == 1) {
+				obj = temp;
+			} else {
+				try {
+					obj = SerializationUtils.deserializeWithClassLoaders(temp);
+				} catch (ClassNotFoundException | IOException e) {
+					throw new IllegalStateException(e);
 
+				}
 			}
-//			obj = SerializationUtils.deserializeFST(temp);
+		}
+	}
+	
+	public void reconstruct(byte[] buffer) throws IOException {
+		if (buffer.length < 15)
+			return;
+		byte[] temp = new byte[4];
+		int size = SerializationUtil.bytesToInt(new byte[] {buffer[0], buffer[1], buffer[2], buffer[3]});
+		temp = new byte[2];
+		this.header = SerializationUtil.bytesToShort(new byte[] {buffer[4], buffer[5]});
+		longValue = ((buffer[6] & 0xFFL) << 56) | ((buffer[7] & 0xFFL) << 48) | ((buffer[8] & 0xFFL) << 40) | ((buffer[9] & 0xFFL) << 32)
+				| ((buffer[10] & 0xFFL) << 24) | ((buffer[11] & 0xFFL) << 16) | ((buffer[12] & 0xFFL) << 8) | ((buffer[13] & 0xFFL));
+		byte flags = buffer[14];
+		isClientTarget = getBit(flags, 0) == 0;
+		if (size > 15) {
+			temp = new byte[buffer.length - 15];
+			temp = Arrays.copyOfRange(buffer, 15, buffer.length);
+			if (getBit(flags, 1) == 1) {
+				obj = temp;
+			} else {
+				try {
+					obj = SerializationUtils.deserializeWithClassLoaders(temp);
+				} catch (ClassNotFoundException | IOException e) {
+					throw new IllegalStateException(e);
+
+				}
+			}
 		}
 	}
 
-	@SuppressWarnings("nls")
 	@Override
 	public ByteBuffer toBytes() {
 		byte[] serializedBytes = null;
-		boolean deserialize = false;
+		boolean raw = false;
 		if (obj == null) {
 			serializedBytes = new byte[0];
 		} else {
-			try {
-				serializedBytes = SerializationUtils.serializeToBytes(obj);
-			} catch (IOException e) {
-				throw new IllegalStateException(e);
+			if (obj instanceof byte[]) {
+				raw = true;
+				serializedBytes = (byte[]) obj;
+			} else {
+				try {
+					serializedBytes = SerializationUtils.serializeToBytes(obj);
+				} catch (IOException e) {
+					throw new IllegalStateException(e);
+				}
 			}
-//			serializedBytes = SerializationUtils.serializeFST(obj);
 		}
 		byte flags = 0;
 		if (!isClientTarget)
 			flags = setBit(flags, 0);
-		if (deserialize)
+		if (raw)
 			flags = setBit(flags, 1);
-
-		// length = size + header + isClientTarget + timeStamp + serializable
-		int length = 4 + 2 + 1 + 8 + serializedBytes.length;
+		// length = size + header + long value + flags + serializable
+		int length = 4 + 2 + 8 + 1 + serializedBytes.length;
 		ByteBuffer finalBB = ByteBuffer.allocateDirect(length);
 		finalBB.put((byte) (length >>> 24));
 		finalBB.put((byte) (length >>> 16));
@@ -201,6 +229,10 @@ public class Packet implements PacketInterface, Serializable, Cloneable {
 		finalBB.put(serializedBytes);
 		finalBB.position(0);
 		return finalBB;
+	}
+
+	public static int getBit(byte b, int position) {
+		return ((b >> position) & 1);
 	}
 
 	public static byte setBit(byte b, int pos) {

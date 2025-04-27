@@ -1,6 +1,7 @@
 package de.ancash.sockets.async.impl.packet.server;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.util.HashSet;
 import java.util.Set;
@@ -15,19 +16,20 @@ import de.ancash.sockets.async.impl.packet.client.AsyncPacketClientWriteHandlerF
 import de.ancash.sockets.async.server.AbstractAsyncServer;
 import de.ancash.sockets.events.ClientConnectEvent;
 import de.ancash.sockets.events.ClientDisconnectEvent;
+import de.ancash.sockets.events.ServerPacketReceiveEvent;
 import de.ancash.sockets.packet.Packet;
 import de.ancash.sockets.packet.UnfinishedPacket;
 
 public class AsyncPacketServer extends AbstractAsyncServer {
 
 	private final LinkedBlockingQueue<Duplet<UnfinishedPacket, AsyncPacketServerClient>> unfishedPackets = new LinkedBlockingQueue<>(10_000);
-	private final ExecutorService workerPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+	private final ExecutorService workerPool = Executors.newFixedThreadPool(Math.max(Runtime.getRuntime().availableProcessors() / 8, 1));
 	private final Set<AsyncPacketServerClient> clients = new HashSet<>();
-
+	
 	public AsyncPacketServer(String address, int port, int packetWorker) {
 		super(address, port);
-		setReadBufSize(1024 * 32);
-		setWriteBufSize(1024 * 32);
+		setReadBufSize(1024 * 128);
+		setWriteBufSize(1024 * 128);
 		setAsyncAcceptHandlerFactory(new AsyncPacketServerAcceptHandlerFactory());
 		setAsyncReadHandlerFactory(new AsyncPacketServerReadHandlerFactory(this));
 		setAsyncWriteHandlerFactory(new AsyncPacketClientWriteHandlerFactory());
@@ -37,7 +39,7 @@ public class AsyncPacketServer extends AbstractAsyncServer {
 	}
 
 	protected final void onPacket(UnfinishedPacket unfinishedPacket, AsyncPacketServerClient sender) {
-		try {
+		try {	
 			unfishedPackets.put(Tuple.of(unfinishedPacket, sender));
 		} catch (InterruptedException e) {
 			e.printStackTrace();
@@ -57,15 +59,16 @@ public class AsyncPacketServer extends AbstractAsyncServer {
 			clients.add(cl);
 		}
 		cl.startReadHandler();
-		System.out.println(cl.getRemoteAddress() + " connected!");
+		System.out.println(cl.getRemoteAddress() + " connected! (" + clients.size() + ")");
 		EventManager.callEvent(new ClientConnectEvent(cl));
 	}
 
 	public void onDisconnect(AsyncPacketServerClient cl, Throwable th) {
-		System.out.println(cl.getRemoteAddress() + " disconnected!");
+
 		synchronized (clients) {
 			clients.remove(cl);
 		}
+		System.out.println(cl.getRemoteAddress() + " disconnected! (" + clients.size() + ")");
 		EventManager.callEvent(new ClientDisconnectEvent(cl, th));
 	}
 

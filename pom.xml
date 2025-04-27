@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.ancash</groupId>
 	<artifactId>sockets</artifactId>
-	<version>0.0.10</version>
+	<version>0.0.11</version>
 	<build>
 		<sourceDirectory>src</sourceDirectory>
 		<resources>
@@ -61,6 +61,11 @@
 		</repository>
 	</repositories>
 	<dependencies>
+		<dependency>
+    		<groupId>com.lmax</groupId>
+    		<artifactId>disruptor</artifactId>
+    		<version>4.0.0</version>
+		</dependency>
 		<dependency>
 			<groupId>javax.json</groupId>
 			<artifactId>javax.json-api</artifactId>

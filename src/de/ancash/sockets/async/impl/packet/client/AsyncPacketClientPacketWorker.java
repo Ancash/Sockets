@@ -25,7 +25,7 @@ public class AsyncPacketClientPacketWorker implements Runnable {
 		while (true) {
 			try {
 				Duplet<AsyncPacketClient, UnfinishedPacket> unfinishedPacket = queue.take();
-				ByteBuffer buffer = unfinishedPacket.getSecond().getBuffer();
+				ByteBuffer buffer = unfinishedPacket.getSecond().buffer.buffer;
 				Packet p = new Packet(unfinishedPacket.getSecond().getHeader());
 				try {
 					p.reconstruct(buffer);
@@ -34,6 +34,7 @@ public class AsyncPacketClientPacketWorker implements Runnable {
 					continue;
 				}
 				EventManager.callEvent(new ClientPacketReceiveEvent(unfinishedPacket.getFirst(), p));
+				unfinishedPacket.getFirst().freeReadBuffer(unfinishedPacket.getSecond().buffer);
 			} catch (Throwable e) {
 				if (!(e instanceof InterruptedException)) {
 					System.err.println("stopped " + Thread.currentThread().getName());

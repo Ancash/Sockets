@@ -19,7 +19,7 @@ public class AsyncPacketClientFactory extends AbstractAsyncClientFactory<AsyncPa
 
 	@Override
 	public AsyncPacketClient newInstance(String address, int port, int readBufSize, int writeBufSize) throws IOException {
-		AsynchronousSocketChannel asyncSocket = AsynchronousSocketChannel.open(null);
+		AsynchronousSocketChannel asyncSocket = AsynchronousSocketChannel.open(group);
 		AsyncPacketClient client = new AsyncPacketClient(asyncSocket, readBufSize, writeBufSize);
 		asyncSocket.connect(new InetSocketAddress(address, port), client, client.getAsyncConnectHandlerFactory().newInstance(client));
 		return client;

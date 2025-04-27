@@ -21,7 +21,7 @@ public class AsyncForwardConnection extends AbstractAsyncClient {
 
 	public AsyncForwardConnection(AsyncForwardServer server, AsynchronousSocketChannel asyncSocket, int readBufSize, int writeBufSize)
 			throws IOException {
-		super(asyncSocket, readBufSize, writeBufSize);
+		super(asyncSocket, readBufSize, writeBufSize, false);
 		this.forwardServer = server;
 		this.server = getServerWithMinimalLoad(forwardServer);
 		this.partner = new AsyncForwardConnection(this.server, server, createAsyncSocket(this), readBufSize, writeBufSize, this);
@@ -35,7 +35,7 @@ public class AsyncForwardConnection extends AbstractAsyncClient {
 
 	AsyncForwardConnection(ServerDescription desc, AsyncForwardServer server, AsynchronousSocketChannel asyncSocket, int readBufSize,
 			int writeBufSize, AsyncForwardConnection partner) throws IOException {
-		super(asyncSocket, readBufSize, writeBufSize);
+		super(asyncSocket, readBufSize, writeBufSize, false);
 		setConnected(true);
 		this.forwardServer = server;
 		this.partner = partner;
@@ -127,11 +127,7 @@ public class AsyncForwardConnection extends AbstractAsyncClient {
 		return isConnected() && partner.isConnected();
 	}
 
-	@Override
-	public boolean delayNextRead() {
-		// TODO Auto-generated method stub
-		return false;
-	}
+	
 
 	@Override
 	public void onBytesReceive(ByteBuffer bytes) {

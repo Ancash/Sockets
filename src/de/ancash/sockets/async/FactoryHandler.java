@@ -3,14 +3,14 @@ package de.ancash.sockets.async;
 import de.ancash.sockets.async.client.AbstractAsyncClientFactory;
 import de.ancash.sockets.async.client.AbstractAsyncConnectHandlerFactory;
 import de.ancash.sockets.async.client.AbstractAsyncReadHandlerFactory;
-import de.ancash.sockets.async.client.AbstractAsyncWriteHandlerFactory;
+import de.ancash.sockets.async.client.WriteHandlerFactory;
 import de.ancash.sockets.async.server.AbstractAsyncAcceptHandlerFactory;
 
 public class FactoryHandler {
 
 	private AbstractAsyncAcceptHandlerFactory acceptHandlerFactory;
 	private AbstractAsyncReadHandlerFactory readHandlerFactory;
-	private AbstractAsyncWriteHandlerFactory writeHandlerFactory;
+	private WriteHandlerFactory writeHandlerFactory;
 	private AbstractAsyncConnectHandlerFactory connectHandlerFactory;
 	@SuppressWarnings("rawtypes")
 	private AbstractAsyncClientFactory asyncSocketFactory;
@@ -31,11 +31,11 @@ public class FactoryHandler {
 		this.readHandlerFactory = readHandlerFactory;
 	}
 
-	public AbstractAsyncWriteHandlerFactory getAsyncWriteHandlerFactory() {
+	public WriteHandlerFactory getAsyncWriteHandlerFactory() {
 		return writeHandlerFactory;
 	}
 
-	public void setAsyncWriteHandlerFactory(AbstractAsyncWriteHandlerFactory writeHandlerFactory) {
+	public void setAsyncWriteHandlerFactory(WriteHandlerFactory writeHandlerFactory) {
 		this.writeHandlerFactory = writeHandlerFactory;
 	}
 

@@ -8,6 +8,7 @@ import java.nio.channels.AsynchronousSocketChannel;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import de.ancash.sockets.async.FactoryHandler;
+import de.ancash.sockets.async.client.AbstractAsyncClientFactory;
 
 public abstract class AbstractAsyncServer extends FactoryHandler {
 
@@ -25,7 +26,7 @@ public abstract class AbstractAsyncServer extends FactoryHandler {
 	}
 
 	public void start() throws IOException {
-		listener = AsynchronousServerSocketChannel.open(null).bind(new InetSocketAddress(address, port));
+		listener = AsynchronousServerSocketChannel.open(AbstractAsyncClientFactory.group).bind(new InetSocketAddress(address, port));
 		listener.accept(listener, getAsyncAcceptHandlerFactory().newInstance(this));
 	}
 

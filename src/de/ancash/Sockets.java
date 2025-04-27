@@ -9,6 +9,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
@@ -20,6 +21,7 @@ import de.ancash.loki.impl.SimpleLokiPluginManagerImpl;
 import de.ancash.loki.logger.PluginOutputFormatter;
 import de.ancash.loki.plugin.LokiPluginClassLoader;
 import de.ancash.loki.plugin.LokiPluginLoader;
+import de.ancash.misc.ConversionUtil;
 import de.ancash.misc.io.IFormatter;
 import de.ancash.misc.io.ILoggerListener;
 import de.ancash.misc.io.LoggerUtils;
@@ -58,49 +60,64 @@ public class Sockets {
 	}
 
 	static void testLatency() throws IOException, InterruptedException {
-		AsyncPacketServer aps = new AsyncPacketServer("localhost", 54321, 1);
+		AsyncPacketServer aps = new AsyncPacketServer("localhost", 54321, 3);
 		aps.start();
 		Thread.sleep(1000);
-		for (int i = 0; i < 10; i++) {
+		int cnt = 1;
+		for (int i = 0; i < cnt; i++) {
 			int o = i;
-			new Thread(() -> {
-				try {
-					Thread.currentThread().setName("cl - " + o);
-					AsyncPacketClient cl = new AsyncPacketClientFactory().newInstance("localhost", 54321, 1024 * 1, 1024 * 1);
-					Thread.sleep(1000);
-					testLatency0(cl);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}).start();
+			Sockets.sleepMillis(5);
+			AsyncPacketClient cl = new AsyncPacketClientFactory().newInstance("localhost", 54321, 1024 * 16, 1024 * 16);
+			while (!cl.isConnected()) {
+				Thread.sleep(1);
+			}
+			for (int j = 0; j < 64; j++) {
+				int k = j;
+				new Thread(() -> {
+					try {
+						Thread.currentThread().setName("cl - " + o + "-" + k);
+						Thread.sleep(6 * (cnt - o));
+						testLatency0(cl);
+					} catch (Throwable e) {
+						e.printStackTrace();
+					}
+				}).start();
+			}
 		}
 	}
+
+	static AtomicLong total = new AtomicLong();
+	static long start = System.currentTimeMillis();
+	static AtomicLong id = new AtomicLong();
 
 	static void testLatency0(AsyncPacketClient cl) throws InterruptedException {
 		Packet packet = new Packet(Packet.PING_PONG);
 		packet.isClientTarget(false);
-		AtomicLong total = new AtomicLong();
-		AtomicInteger cnt = new AtomicInteger();
-		packet.setObject(System.nanoTime());
+		start = System.currentTimeMillis();
+		total.set(0);
+		cnt.set(0);
+		long i = id.getAndIncrement();
+		packet.setObject(ConversionUtil.longToBytes(System.nanoTime()));
+
 		packet.setPacketCallback(new PacketCallback() {
 
 			@Override
 			public void call(Object result) {
-				Packet p = new Packet(Packet.PING_PONG);
-				total.addAndGet(System.nanoTime() - (long) result);
-				if (cnt.incrementAndGet() % 5000 == 0) {
-					System.out.println((total.get() / cnt.get()) + " ns/req");
+//				System.out.println("arrived! " + (System.nanoTime() - ConversionUtil.bytesToLong((byte[]) result)));
 
-				}
-				p.resetResponse();
-				p.setObject(System.nanoTime());
-				p.isClientTarget(false);
-				p.setPacketCallback(this);
 				try {
+					Packet p = new Packet(Packet.PING_PONG);
+					total.addAndGet(System.nanoTime() - ConversionUtil.bytesToLong((byte[]) result));
+					if (cnt.incrementAndGet() % 100_000 == 0) {
+						System.out.println(1D / (((double) (System.currentTimeMillis() - start) / cnt.get()) / 1000D) + " req/s ");
+					}
+					p.resetResponse();
+					p.setObject(ConversionUtil.longToBytes(System.nanoTime()));
+					p.isClientTarget(false);
+					p.setPacketCallback(this);
 					cl.write(p);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+				} catch (Throwable th) {
+					th.printStackTrace();
 				}
 			}
 		});
@@ -108,17 +125,18 @@ public class Sockets {
 	}
 
 	static void testThroughput() throws IOException, InterruptedException {
-		AsyncPacketServer aps = new AsyncPacketServer("ryzen2400g", 54321, 2);
+		AsyncPacketServer aps = new AsyncPacketServer("localhost", 54321, Math.max(Runtime.getRuntime().availableProcessors() / 4, 1));
 		aps.start();
 		Thread.sleep(1000);
-		for (int i = 0; i < 1; i++) {
+		for (int i = 0; i < 2; i++) {
 			int o = i;
 			new Thread(() -> {
 				try {
 					Thread.currentThread().setName("cl - " + o);
-					AsyncPacketClient cl = new AsyncPacketClientFactory().newInstance("ryzen2400g", 54321, 1024 * 16, 1024 * 16);
+					AsyncPacketClient cl = new AsyncPacketClientFactory().newInstance("localhost", 54321, 1024 * 128, 1024 * 128);
 					while (!cl.isConnected())
 						Thread.sleep(1);
+					Thread.sleep(500);
 					testThroughput0(cl);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -129,13 +147,13 @@ public class Sockets {
 
 	static long now = System.currentTimeMillis();
 	static AtomicLong cnt = new AtomicLong();
+	static AtomicLong arrived = new AtomicLong();
 
 	static void testThroughput0(AsyncPacketClient cl) throws InterruptedException {
 		while (true) {
 			AtomicLong sent = new AtomicLong();
-
 			Packet packet = new Packet(Packet.PING_PONG);
-			int pl = 1024 * 15;
+			int pl = 1 + (1024 * 64 - 16);
 			packet.setObject(new byte[pl]);
 			int size = packet.toBytes().remaining();
 			int f = 10000;
@@ -148,15 +166,17 @@ public class Sockets {
 
 					@Override
 					public void call(Object result) {
-						sent.decrementAndGet();
-						if (cnt.incrementAndGet() % 10000 == 0)
+						arrived.incrementAndGet();
+						if (cnt.incrementAndGet() % 100_000 == 0) {
 							System.out.println(((cnt.get() * size * 2) / 1024D) / ((System.currentTimeMillis() - now + 1D) / 1000D) + " kbytes/s");
+							System.out.println(arrived.get() / ((System.currentTimeMillis() - now + 1D) / 1000D) + " reqs/sec " + cnt.get());
+						}
 					}
 				});
 				cl.write(packet);
-				sent.incrementAndGet();
+//				Sockets.sleep(500_000);
 			}
-//			while(sent.get() > 0)
+//			while(sent.get() > 0) 
 //				Thread.sleep(1);
 
 		}
