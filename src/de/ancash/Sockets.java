@@ -128,12 +128,12 @@ public class Sockets {
 		AsyncPacketServer aps = new AsyncPacketServer("localhost", 54321, Math.max(Runtime.getRuntime().availableProcessors() / 4, 1));
 		aps.start();
 		Thread.sleep(1000);
-		for (int i = 0; i < 2; i++) {
+		for (int i = 0; i < 1; i++) {
 			int o = i;
 			new Thread(() -> {
 				try {
 					Thread.currentThread().setName("cl - " + o);
-					AsyncPacketClient cl = new AsyncPacketClientFactory().newInstance("localhost", 54321, 1024 * 128, 1024 * 128);
+					AsyncPacketClient cl = new AsyncPacketClientFactory().newInstance("localhost", 54321, 1024 * 32, 1024 * 32);
 					while (!cl.isConnected())
 						Thread.sleep(1);
 					Thread.sleep(500);
@@ -153,7 +153,7 @@ public class Sockets {
 		while (true) {
 			AtomicLong sent = new AtomicLong();
 			Packet packet = new Packet(Packet.PING_PONG);
-			int pl = 1 + (1024 * 64 - 16);
+			int pl = 1 + (1024 * 8 - 16);
 			packet.setObject(new byte[pl]);
 			int size = packet.toBytes().remaining();
 			int f = 10000;
@@ -167,7 +167,7 @@ public class Sockets {
 					@Override
 					public void call(Object result) {
 						arrived.incrementAndGet();
-						if (cnt.incrementAndGet() % 100_000 == 0) {
+						if (cnt.incrementAndGet() % 10_000 == 0) {
 							System.out.println(((cnt.get() * size * 2) / 1024D) / ((System.currentTimeMillis() - now + 1D) / 1000D) + " kbytes/s");
 							System.out.println(arrived.get() / ((System.currentTimeMillis() - now + 1D) / 1000D) + " reqs/sec " + cnt.get());
 						}
@@ -204,10 +204,10 @@ public class Sockets {
 	public static void main(String... args) throws InterruptedException, NumberFormatException, UnknownHostException, IOException {
 		System.out.println("Starting Sockets...");
 		SerializationUtils.addClazzLoader(Sockets.class.getClassLoader());
-//		testThroughput();
+		testThroughput();
 //		testLatency();
-//		if (true)
-//			return;
+		if (true)
+			return;
 		PluginOutputFormatter pof = new PluginOutputFormatter(
 				"[" + IFormatter.PART_DATE_TIME + "] " + "[" + IFormatter.THREAD_NAME + "/" + IFormatter.COLOR + IFormatter.LEVEL + IFormatter.RESET
 						+ "] [" + PluginOutputFormatter.PLUGIN_NAME + "] " + IFormatter.COLOR + IFormatter.MESSAGE + IFormatter.RESET,

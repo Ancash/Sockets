@@ -17,7 +17,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import de.ancash.sockets.io.DistributedByteBuffer;
 import de.ancash.sockets.io.RotatingBuffer;
 
-public class GatheringWriteHandler implements IWriteHandler, CompletionHandler<Long, DistributedByteBuffer[]> {
+public class DefaultAsyncWriteHandler implements IWriteHandler, CompletionHandler<Long, DistributedByteBuffer[]> {
 
 	static final ScheduledExecutorService exec = Executors.newScheduledThreadPool(Math.max(Runtime.getRuntime().availableProcessors() / 4, 1),
 			new ThreadFactory() {
@@ -33,7 +33,7 @@ public class GatheringWriteHandler implements IWriteHandler, CompletionHandler<L
 	protected AtomicBoolean canWrite = new AtomicBoolean(true);
 	protected final RotatingBuffer writeBuf;
 
-	public GatheringWriteHandler(AbstractAsyncClient asyncSocket) {
+	public DefaultAsyncWriteHandler(AbstractAsyncClient asyncSocket) {
 		this.client = asyncSocket;
 		writeBuf = new RotatingBuffer(asyncSocket.writeBufSize, 16);
 	}

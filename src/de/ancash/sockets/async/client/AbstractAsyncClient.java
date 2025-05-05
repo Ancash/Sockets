@@ -21,7 +21,7 @@ public abstract class AbstractAsyncClient extends FactoryHandler {
 	protected final int readBufSize;
 	protected final int writeBufSize;
 	protected final AsynchronousSocketChannel asyncSocket;
-	protected AbstractAsyncReadHandler readHandler;
+	protected IReadHandler readHandler;
 	protected IWriteHandler writeHandler;
 	protected SocketAddress remoteAddress;
 	protected SocketAddress localAddress;
@@ -32,7 +32,8 @@ public abstract class AbstractAsyncClient extends FactoryHandler {
 	protected AtomicLong pos = new AtomicLong();
 	protected long stamp = System.currentTimeMillis();
 
-	public AbstractAsyncClient(AsynchronousSocketChannel asyncSocket, int readBufSize, int writeBufSize, boolean isClientSide) throws IOException {
+	public AbstractAsyncClient(AsynchronousSocketChannel asyncSocket, int readBufSize, int writeBufSize)
+			throws IOException {
 		if (asyncSocket == null || !asyncSocket.isOpen())
 			throw new IllegalArgumentException("Invalid AsynchronousSocketChannel");
 		this.readBufSize = readBufSize;
@@ -40,12 +41,16 @@ public abstract class AbstractAsyncClient extends FactoryHandler {
 		this.asyncSocket = asyncSocket;
 		asyncSocket.setOption(StandardSocketOptions.SO_RCVBUF, readBufSize);
 		asyncSocket.setOption(StandardSocketOptions.SO_SNDBUF, writeBufSize);
-//		asyncSocket.setOption(StandardSocketOptions.TCP_NODELAY, true);
+		writeHandler = new DefaultAsyncWriteHandler(this);
+		readHandler = new DefaultAsyncReadHandler(this, readBufSize, null);
 	}
 
-	public void setHandlers() {
-		this.readHandler = getAsyncReadHandlerFactory().newInstance(this, readBufSize);
-		this.writeHandler = getAsyncWriteHandlerFactory().newInstance(this);
+	public void setWriteHandler(IWriteHandler writeHandler) {
+		this.writeHandler = writeHandler;
+	}
+
+	public void setReadHandler(IReadHandler readHandler) {
+		this.readHandler = readHandler;
 	}
 
 	@Override
@@ -69,12 +74,6 @@ public abstract class AbstractAsyncClient extends FactoryHandler {
 	public void startReadHandler(long t, TimeUnit tu) {
 		this.timeout = t;
 		this.timeoutunit = tu;
-		try {
-			this.remoteAddress = asyncSocket.getRemoteAddress();
-			this.localAddress = asyncSocket.getLocalAddress();
-		} catch (IOException ex) {
-			System.err.println("could not get local/remote socket address");
-		}
 		readHandler.tryInitRead();
 	}
 
@@ -114,6 +113,13 @@ public abstract class AbstractAsyncClient extends FactoryHandler {
 		this.isConnected.set(b);
 		if (!b) {
 			readHandler.onDisconnect();
+		} else {
+			try {
+				this.remoteAddress = asyncSocket.getRemoteAddress();
+				this.localAddress = asyncSocket.getLocalAddress();
+			} catch (IOException ex) {
+				System.err.println("could not get local/remote socket address");
+			}
 		}
 	}
 
@@ -124,7 +130,9 @@ public abstract class AbstractAsyncClient extends FactoryHandler {
 
 	public abstract boolean isConnectionValid();
 
-	public abstract void onBytesReceive(ByteBuffer bytes);
+	public void onBytesReceive(ByteBuffer bytes) {
+
+	}
 
 	public abstract void onConnect();
 

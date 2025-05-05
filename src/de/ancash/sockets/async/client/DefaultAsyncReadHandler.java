@@ -6,6 +6,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -13,10 +14,10 @@ import de.ancash.sockets.async.ByteEventHandler;
 import de.ancash.sockets.io.ByteBufferDistributor;
 import de.ancash.sockets.io.DistributedByteBuffer;
 
-public abstract class AbstractAsyncReadHandler implements CompletionHandler<Integer, DistributedByteBuffer> {
+public class DefaultAsyncReadHandler implements CompletionHandler<Integer, DistributedByteBuffer>, IReadHandler {
 
-	static final ExecutorService exec = Executors.newFixedThreadPool(Math.max(Runtime.getRuntime().availableProcessors() / 8, 1),
-			new ThreadFactory() {
+	static final ExecutorService exec = Executors
+			.newFixedThreadPool(Math.max(Runtime.getRuntime().availableProcessors() / 8, 1), new ThreadFactory() {
 				AtomicInteger cnt = new AtomicInteger();
 
 				@Override
@@ -27,11 +28,11 @@ public abstract class AbstractAsyncReadHandler implements CompletionHandler<Inte
 
 	protected final AbstractAsyncClient client;
 	protected ByteEventHandler byteHandler;
-	AtomicBoolean reading = new AtomicBoolean(false);
-	AtomicBoolean completing = new AtomicBoolean(false);
-	static final int bufCnt = 4;
+	protected AtomicBoolean reading = new AtomicBoolean(false);
+	protected AtomicBoolean completing = new AtomicBoolean(false);
+	private static final int bufCnt = 4;
 
-	public AbstractAsyncReadHandler(AbstractAsyncClient asyncClient, int readBufSize, ByteEventHandler byteHandler) {
+	public DefaultAsyncReadHandler(AbstractAsyncClient asyncClient, int readBufSize, ByteEventHandler byteHandler) {
 		this.client = asyncClient;
 		this.byteHandler = byteHandler;
 		bbd = new ByteBufferDistributor(readBufSize, bufCnt);
@@ -69,8 +70,8 @@ public abstract class AbstractAsyncReadHandler implements CompletionHandler<Inte
 		}
 		while (!toDo.isEmpty()) {
 			DistributedByteBuffer next = toDo.poll();
-			if (client.readHandler.byteHandler != null)
-				client.readHandler.byteHandler.onBytes(next.buffer);
+			if (byteHandler != null)
+				byteHandler.onBytes(next.buffer);
 			else
 				client.onBytesReceive(next.buffer);
 			bbd.freeBuffer(next);
@@ -88,7 +89,12 @@ public abstract class AbstractAsyncReadHandler implements CompletionHandler<Inte
 
 	private void initRead() {
 		DistributedByteBuffer readBuf;
-		readBuf = bbd.getBufferBlocking();
+		readBuf = bbd.getBufferBlocking(1, TimeUnit.SECONDS);
+		if(readBuf == null) {
+			System.out.println("could not acquire read buf in time, queuing");
+			exec.submit(() -> initRead());
+			return;
+		}
 		client.getAsyncSocketChannel().read(readBuf.buffer, readBuf, this);
 	}
 
@@ -98,5 +104,7 @@ public abstract class AbstractAsyncReadHandler implements CompletionHandler<Inte
 		client.onDisconnect(arg0);
 	}
 
-	public abstract void onDisconnect();
+	public void onDisconnect() {
+		bbd = null;
+	}
 }

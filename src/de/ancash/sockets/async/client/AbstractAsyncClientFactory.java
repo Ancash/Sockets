@@ -10,7 +10,7 @@ import de.ancash.sockets.async.server.AbstractAsyncServer;
 
 public abstract class AbstractAsyncClientFactory<T extends AbstractAsyncClient> {
 
-	public static AsynchronousChannelGroup group;
+	private static AsynchronousChannelGroup group;
 	static {
 		try {
 			AtomicInteger cnt = new AtomicInteger();
@@ -24,6 +24,10 @@ public abstract class AbstractAsyncClientFactory<T extends AbstractAsyncClient> 
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public static AsynchronousChannelGroup getGroup() {
+		return group;
 	}
 
 	public abstract T newInstance(AbstractAsyncServer asyncServer, AsynchronousSocketChannel socket, int readBufSize, int writeBufSize)

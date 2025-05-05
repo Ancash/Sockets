@@ -1,7 +1,8 @@
 package de.ancash.sockets.async.client;
 
-public abstract class AbstractAsyncConnectHandlerFactory {
+@FunctionalInterface
+public interface AbstractAsyncConnectHandlerFactory {
 
-	public abstract AbstractAsyncConnectHandler newInstance(AbstractAsyncClient client);
+	public DefaultAsyncConnectHandler newInstance(AbstractAsyncClient client);
 
 }

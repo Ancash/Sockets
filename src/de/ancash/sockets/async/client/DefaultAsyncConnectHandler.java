@@ -2,11 +2,11 @@ package de.ancash.sockets.async.client;
 
 import java.nio.channels.CompletionHandler;
 
-public abstract class AbstractAsyncConnectHandler implements CompletionHandler<Void, AbstractAsyncClient> {
+public class DefaultAsyncConnectHandler implements CompletionHandler<Void, AbstractAsyncClient> {
 
 	protected final AbstractAsyncClient client;
 
-	public AbstractAsyncConnectHandler(AbstractAsyncClient client) {
+	public DefaultAsyncConnectHandler(AbstractAsyncClient client) {
 		this.client = client;
 	}
 

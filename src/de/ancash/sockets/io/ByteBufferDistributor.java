@@ -2,6 +2,7 @@ package de.ancash.sockets.io;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ByteBufferDistributor {
@@ -38,9 +39,9 @@ public class ByteBufferDistributor {
 		return availableBuffers.poll();
 	}
 
-	public DistributedByteBuffer getBufferBlocking()  {
+	public DistributedByteBuffer getBufferBlocking(long timeout, TimeUnit unit)  {
 		try {
-			return availableBuffers.take();
+			return availableBuffers.poll(timeout, unit);
 		} catch (InterruptedException e) {
 			return null;
 		}

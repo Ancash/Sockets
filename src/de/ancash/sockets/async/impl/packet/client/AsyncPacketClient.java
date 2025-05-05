@@ -10,7 +10,6 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -23,6 +22,7 @@ import de.ancash.libs.org.bukkit.event.EventHandler;
 import de.ancash.libs.org.bukkit.event.EventManager;
 import de.ancash.libs.org.bukkit.event.Listener;
 import de.ancash.sockets.async.client.AbstractAsyncClient;
+import de.ancash.sockets.async.client.DefaultAsyncConnectHandler;
 import de.ancash.sockets.events.ClientConnectEvent;
 import de.ancash.sockets.events.ClientDisconnectEvent;
 import de.ancash.sockets.events.ClientPacketReceiveEvent;
@@ -73,13 +73,10 @@ public class AsyncPacketClient extends AbstractAsyncClient implements Listener {
 	private final AtomicLong packetId = new AtomicLong();
 
 	public AsyncPacketClient(AsynchronousSocketChannel asyncSocket, int readBufSize, int writeBufSize) throws IOException {
-		super(asyncSocket, readBufSize, writeBufSize, true);
+		super(asyncSocket, readBufSize, writeBufSize);
 		packetCombiner = new PacketCombiner(1024 * 1024, 16);
 		setAsyncClientFactory(new AsyncPacketClientFactory());
-		setAsyncReadHandlerFactory(new AsyncPacketClientReadHandlerFactory());
-		setAsyncWriteHandlerFactory(new AsyncPacketClientWriteHandlerFactory());
-		setAsyncConnectHandlerFactory(new AsyncPacketClientConnectHandlerFactory());
-		setHandlers();
+		setAsyncConnectHandlerFactory(s -> new DefaultAsyncConnectHandler(s));
 
 		EventManager.registerEvents(this, this);
 	}

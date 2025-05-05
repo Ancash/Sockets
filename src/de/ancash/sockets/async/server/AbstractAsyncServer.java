@@ -9,6 +9,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import de.ancash.sockets.async.FactoryHandler;
 import de.ancash.sockets.async.client.AbstractAsyncClientFactory;
+import de.ancash.sockets.async.client.DefaultAsyncReadHandler;
+import de.ancash.sockets.async.client.DefaultAsyncWriteHandler;
+import de.ancash.sockets.async.client.IReadHandlerFactory;
+import de.ancash.sockets.async.client.IWriteHandlerFactory;
 
 public abstract class AbstractAsyncServer extends FactoryHandler {
 
@@ -16,17 +20,27 @@ public abstract class AbstractAsyncServer extends FactoryHandler {
 
 	private final String address;
 	private final int port;
-	private int readBufSize = 8 * 1024;
-	private int writeBufSize = 8 * 1024;
+	private int readBufSize = 64 * 1024;
+	private int writeBufSize = 64 * 1024;
 	private AsynchronousServerSocketChannel listener;
+	protected IWriteHandlerFactory writeHandlerFactory = s -> new DefaultAsyncWriteHandler(s);
+	protected IReadHandlerFactory readHandlerFactory = s -> new DefaultAsyncReadHandler(s, readBufSize, null);
 
 	public AbstractAsyncServer(String address, int port) {
 		this.address = address;
 		this.port = port;
 	}
+	
+	public void setReadHandlerFactory(IReadHandlerFactory readHandlerFactory) {
+		this.readHandlerFactory = readHandlerFactory;
+	}
+	
+	public void setWriteHandlerFactory(IWriteHandlerFactory writeHandlerFactory) {
+		this.writeHandlerFactory = writeHandlerFactory;
+	}
 
 	public void start() throws IOException {
-		listener = AsynchronousServerSocketChannel.open(AbstractAsyncClientFactory.group).bind(new InetSocketAddress(address, port));
+		listener = AsynchronousServerSocketChannel.open(AbstractAsyncClientFactory.getGroup()).bind(new InetSocketAddress(address, port));
 		listener.accept(listener, getAsyncAcceptHandlerFactory().newInstance(this));
 	}
 

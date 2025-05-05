@@ -21,28 +21,22 @@ public class AsyncForwardConnection extends AbstractAsyncClient {
 
 	public AsyncForwardConnection(AsyncForwardServer server, AsynchronousSocketChannel asyncSocket, int readBufSize, int writeBufSize)
 			throws IOException {
-		super(asyncSocket, readBufSize, writeBufSize, false);
+		super(asyncSocket, readBufSize, writeBufSize);
 		this.forwardServer = server;
 		this.server = getServerWithMinimalLoad(forwardServer);
 		this.partner = new AsyncForwardConnection(this.server, server, createAsyncSocket(this), readBufSize, writeBufSize, this);
 		setConnected(true);
 		System.out.println(getRemoteAddress() + " <--> " + asyncSocket.getLocalAddress() + " <--> " + partner.getRemoteAddress());
-		setAsyncReadHandlerFactory(server.getAsyncReadHandlerFactory());
-		setAsyncWriteHandlerFactory(server.getAsyncWriteHandlerFactory());
-		setHandlers();
 		startReadHandler();
 	}
 
 	AsyncForwardConnection(ServerDescription desc, AsyncForwardServer server, AsynchronousSocketChannel asyncSocket, int readBufSize,
 			int writeBufSize, AsyncForwardConnection partner) throws IOException {
-		super(asyncSocket, readBufSize, writeBufSize, false);
+		super(asyncSocket, readBufSize, writeBufSize);
 		setConnected(true);
 		this.forwardServer = server;
 		this.partner = partner;
 		this.server = desc;
-		setAsyncReadHandlerFactory(server.getAsyncReadHandlerFactory());
-		setAsyncWriteHandlerFactory(server.getAsyncWriteHandlerFactory());
-		setHandlers();
 		startReadHandler();
 	}
 

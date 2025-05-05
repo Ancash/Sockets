@@ -18,13 +18,10 @@ public class AsyncPacketServerClient extends AbstractAsyncClient {
 
 	public AsyncPacketServerClient(AbstractAsyncServer asyncIOServer, AsynchronousSocketChannel asyncSocket, int readBufSize, int writeBufSize)
 			throws IOException {
-		super(asyncSocket, readBufSize, writeBufSize, false);
+		super(asyncSocket, readBufSize, writeBufSize);
 		packetCombiner = new PacketCombiner(1024 * 1024, 16);
 		this.server = (AsyncPacketServer) asyncIOServer;
-		setAsyncWriteHandlerFactory(asyncIOServer.getAsyncWriteHandlerFactory());
-		setAsyncReadHandlerFactory(asyncIOServer.getAsyncReadHandlerFactory());
 		setConnected(true);
-		setHandlers();
 	}
 
 	public int getMaxPacketSize() {

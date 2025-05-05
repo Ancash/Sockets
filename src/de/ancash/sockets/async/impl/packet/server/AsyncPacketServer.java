@@ -1,7 +1,6 @@
 package de.ancash.sockets.async.impl.packet.server;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.util.HashSet;
 import java.util.Set;
@@ -12,34 +11,33 @@ import java.util.concurrent.LinkedBlockingQueue;
 import de.ancash.datastructures.tuples.Duplet;
 import de.ancash.datastructures.tuples.Tuple;
 import de.ancash.libs.org.bukkit.event.EventManager;
-import de.ancash.sockets.async.impl.packet.client.AsyncPacketClientWriteHandlerFactory;
 import de.ancash.sockets.async.server.AbstractAsyncServer;
+import de.ancash.sockets.async.server.DefaultAsyncAcceptHandler;
 import de.ancash.sockets.events.ClientConnectEvent;
 import de.ancash.sockets.events.ClientDisconnectEvent;
-import de.ancash.sockets.events.ServerPacketReceiveEvent;
 import de.ancash.sockets.packet.Packet;
 import de.ancash.sockets.packet.UnfinishedPacket;
 
 public class AsyncPacketServer extends AbstractAsyncServer {
 
-	private final LinkedBlockingQueue<Duplet<UnfinishedPacket, AsyncPacketServerClient>> unfishedPackets = new LinkedBlockingQueue<>(10_000);
-	private final ExecutorService workerPool = Executors.newFixedThreadPool(Math.max(Runtime.getRuntime().availableProcessors() / 8, 1));
+	private final LinkedBlockingQueue<Duplet<UnfinishedPacket, AsyncPacketServerClient>> unfishedPackets = new LinkedBlockingQueue<>(
+			10_000);
+	private final ExecutorService workerPool = Executors
+			.newFixedThreadPool(Math.max(Runtime.getRuntime().availableProcessors() / 8, 1));
 	private final Set<AsyncPacketServerClient> clients = new HashSet<>();
-	
+
 	public AsyncPacketServer(String address, int port, int packetWorker) {
 		super(address, port);
-		setReadBufSize(1024 * 128);
-		setWriteBufSize(1024 * 128);
-		setAsyncAcceptHandlerFactory(new AsyncPacketServerAcceptHandlerFactory());
-		setAsyncReadHandlerFactory(new AsyncPacketServerReadHandlerFactory(this));
-		setAsyncWriteHandlerFactory(new AsyncPacketClientWriteHandlerFactory());
+		setReadBufSize(1024 * 32);
+		setWriteBufSize(1024 * 32);
+		setAsyncAcceptHandlerFactory(s -> new DefaultAsyncAcceptHandler(s));
 		setAsyncClientFactory(new AsyncPacketServerClientFactory());
 		for (int i = 0; i < packetWorker; i++)
 			workerPool.submit(new AsyncPacketServerPacketWorker(this, i));
 	}
 
 	protected final void onPacket(UnfinishedPacket unfinishedPacket, AsyncPacketServerClient sender) {
-		try {	
+		try {
 			unfishedPackets.put(Tuple.of(unfinishedPacket, sender));
 		} catch (InterruptedException e) {
 			e.printStackTrace();
@@ -54,10 +52,13 @@ public class AsyncPacketServer extends AbstractAsyncServer {
 
 	@Override
 	public void onAccept(AsynchronousSocketChannel socket) throws IOException {
-		AsyncPacketServerClient cl = (AsyncPacketServerClient) getAsyncClientFactory().newInstance(this, socket, getReadBufSize(), getWriteBufSize());
+		AsyncPacketServerClient cl = (AsyncPacketServerClient) getAsyncClientFactory().newInstance(this, socket,
+				getReadBufSize(), getWriteBufSize());
 		synchronized (clients) {
 			clients.add(cl);
 		}
+		cl.setWriteHandler(writeHandlerFactory.newInstance(cl));
+		cl.setReadHandler(readHandlerFactory.newInstance(cl));
 		cl.startReadHandler();
 		System.out.println(cl.getRemoteAddress() + " connected! (" + clients.size() + ")");
 		EventManager.callEvent(new ClientConnectEvent(cl));
