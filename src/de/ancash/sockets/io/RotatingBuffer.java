@@ -19,8 +19,9 @@ public class RotatingBuffer {
 	}
 
 	private final ByteBuffer[] bufs;
-	private final LinkedBlockingDeque<DistributedByteBuffer> availableBufs;
-	private final LinkedBlockingDeque<DistributedByteBuffer> readyForReadBufs;
+	private LinkedBlockingDeque<DistributedByteBuffer> availableBufs;
+	private LinkedBlockingDeque<DistributedByteBuffer> readyForReadBufs;
+	private volatile Thread threadTakingAvailable;
 
 	public RotatingBuffer(int bufSize, int cnt) {
 		bufs = new ByteBuffer[cnt];
@@ -51,6 +52,19 @@ public class RotatingBuffer {
 		}
 		return b;
 	}
+	
+	public void close() {
+		if(threadTakingAvailable != null) {
+			try {
+				threadTakingAvailable.interrupt();
+			} catch(Throwable th) {
+				
+			}
+			threadTakingAvailable = null;
+			availableBufs = null;
+			readyForReadBufs = null;
+		}
+	}
 
 	public synchronized int writeBlocking(ByteBuffer src) throws InterruptedException {
 		if (readyForReadBufs.remainingCapacity() == 0) {
@@ -61,8 +75,9 @@ public class RotatingBuffer {
 			if (target != null) {
 				readyForReadBufs.add(target);
 			}
-
+			threadTakingAvailable = Thread.currentThread();
 			target = availableBufs.take();
+			threadTakingAvailable = null;
 		}
 		return write(src, target);
 	}

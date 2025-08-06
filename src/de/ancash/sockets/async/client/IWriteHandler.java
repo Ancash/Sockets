@@ -5,5 +5,7 @@ import java.nio.ByteBuffer;
 public interface IWriteHandler {
 
 	public void write(ByteBuffer bb);
+	
+	public void onDisconnect();
 
 }

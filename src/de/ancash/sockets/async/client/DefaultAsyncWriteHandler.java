@@ -31,7 +31,7 @@ public class DefaultAsyncWriteHandler implements IWriteHandler, CompletionHandle
 
 	protected final AbstractAsyncClient client;
 	protected AtomicBoolean canWrite = new AtomicBoolean(true);
-	protected final RotatingBuffer writeBuf;
+	protected RotatingBuffer writeBuf;
 
 	public DefaultAsyncWriteHandler(AbstractAsyncClient asyncSocket) {
 		this.client = asyncSocket;
@@ -59,6 +59,11 @@ public class DefaultAsyncWriteHandler implements IWriteHandler, CompletionHandle
 			canWrite.set(true);
 			checkWrite();
 		}
+	}
+	
+	@Override
+	public void onDisconnect() {
+		writeBuf.close();
 	}
 
 	@Override

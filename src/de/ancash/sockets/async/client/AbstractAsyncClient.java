@@ -113,6 +113,7 @@ public abstract class AbstractAsyncClient extends FactoryHandler {
 		this.isConnected.set(b);
 		if (!b) {
 			readHandler.onDisconnect();
+			writeHandler.onDisconnect();
 		} else {
 			try {
 				this.remoteAddress = asyncSocket.getRemoteAddress();
