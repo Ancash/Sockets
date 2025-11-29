@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.ancash</groupId>
 	<artifactId>sockets</artifactId>
-	<version>0.0.11</version>
+	<version>0.0.12</version>
 	<build>
 		<sourceDirectory>src</sourceDirectory>
 		<resources>
@@ -48,6 +48,53 @@
 					</execution>
 				</executions>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>3.5.3</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+
+							<filters>
+							                    <filter>
+                        <artifact>*:*</artifact>
+                       <excludes>
+                            <exclude>org/bouncycastle/**</exclude>
+                            <exclude>org/bouncycastle/*</exclude>
+                        </excludes>
+                    </filter>
+                    <filter>
+                        <artifact>*:*</artifact>
+                        <excludes>
+                            <exclude>META-INF/native/**</exclude>
+                            <exclude>META-INF/native/*</exclude>
+                        </excludes>
+                    </filter>
+                    <filter>
+                        <artifact>*:*</artifact>
+                        <excludes>
+                            <exclude>META-INF/versions/**</exclude>
+                            <exclude>META-INF/versions/*</exclude>
+                        </excludes>
+                    </filter>
+                    <filter>
+                        <artifact>*:*</artifact>
+                        <excludes>
+                            <exclude>META-INF/*.SF</exclude>
+                            <exclude>META-INF/*.DSA</exclude>
+                            <exclude>META-INF/*.RSA</exclude>
+                        </excludes>
+                    </filter>
+                </filters>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 	<repositories>
@@ -61,6 +108,11 @@
 		</repository>
 	</repositories>
 	<dependencies>
+		<dependency>
+    <groupId>io.netty</groupId>
+    <artifactId>netty-all</artifactId>
+    <version>4.1.128.Final</version>
+</dependency>
 		<dependency>
 			<groupId>javax.json</groupId>
 			<artifactId>javax.json-api</artifactId>
